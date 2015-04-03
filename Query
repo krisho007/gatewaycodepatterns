@@ -3,12 +3,25 @@
   DATA lt_filter_select_options TYPE /iwbep/t_mgw_select_option.
   DATA ls_filter TYPE /iwbep/s_mgw_select_option.
   lt_filter_select_options = io_tech_request_context->get_filter( )->get_filter_select_options( ).
-  LOOP AT lt_filter_select_options INTO ls_filter.
-  ENDLOOP.
+  "Replace 'Plant' with suitable name
+  READ TABLE lt_filter_select_options INTO ls_filter WITH KEY property = 'Plant'.
+    IF sy-subrc EQ 0.
+      READ TABLE ls_filter-select_options INTO ls_select_option INDEX 1.
+      lv_plant = ls_select_option-low.
+    ENDIF.
 
 *Get Open search string
-  DATA lv_search_string  TYPE string.
+  DATA: lv_search_string  TYPE string.
+  DATA: ltr_vendor_name   TYPE RANGE OF name1_gp,
+        lsr_vendor_name   LIKE LINE OF ltr_vendor_name.
   lv_search_string = io_tech_request_context->get_search_string( ).
+  "Create a range table to be used in a SELECT statement. Replace 'Vendor' above
+  IF lv_search_string IS NOT INITIAL.
+    CONCATENATE '*' lv_search_string '*' INTO lsr_vendor_name-low.
+    lsr_vendor_name-option = 'CP'.
+    lsr_vendor_name-sign = 'I'.
+    APPEND lsr_vendor_name TO ltr_vendor_name.
+  ENDIF.
 
 *Top&Skip
   DATA: lv_top  TYPE i.
