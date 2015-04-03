@@ -2,11 +2,16 @@
 *Get Filters
   DATA lt_filter_select_options TYPE /iwbep/t_mgw_select_option.
   DATA ls_filter TYPE /iwbep/s_mgw_select_option.
-  
-  lt_filter_select_options = lo_filter->get_filter_select_options( ).
+  lt_filter_select_options = io_tech_request_context->get_filter( )->get_filter_select_options( ).
   LOOP AT lt_filter_select_options INTO ls_filter.
   ENDLOOP.
 
 *Get Open search string
+  DATA lv_search_string  TYPE string.
+  lv_search_string = io_tech_request_context->get_search_string( ).
 
-
+*Top&Skip
+  DATA: lv_top  TYPE i.
+  DATA: lv_skip TYPE i.
+  lv_top = io_tech_request_context->get_top( ).
+  lv_skip = io_tech_request_context->get_skip( ).
