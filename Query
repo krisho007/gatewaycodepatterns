@@ -1,1 +1,12 @@
 
+*Get Filters
+  DATA lt_filter_select_options TYPE /iwbep/t_mgw_select_option.
+  DATA ls_filter TYPE /iwbep/s_mgw_select_option.
+  
+  lt_filter_select_options = lo_filter->get_filter_select_options( ).
+  LOOP AT lt_filter_select_options INTO ls_filter.
+  ENDLOOP.
+
+*Get Open search string
+
+
