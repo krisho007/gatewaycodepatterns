@@ -10,6 +10,19 @@
       lv_plant = ls_select_option-low.
     ENDIF.
 
+*Get Source Keys. If query is through Navigation
+  DATA: lt_parent_keys            TYPE /iwbep/t_mgw_tech_pairs,
+        ls_parent_key             TYPE /iwbep/s_mgw_tech_pair.
+  "Get Parent entity name
+  IF io_tech_request_context->get_source_entity_type_name( ) = 'Material'.
+    "get parent keys
+    lt_parent_keys = io_tech_request_context->get_source_keys( ).
+    READ TABLE lt_parent_keys INTO ls_parent_key WITH KEY name = 'MATERIALNUMBER'.
+    IF sy-subrc EQ 0.
+      lv_material_number = ls_parent_key-value.
+    ENDIF.
+  ENDIF.
+
 *Get Open search string
   DATA: lv_search_string  TYPE string.
   DATA: ltr_vendor_name   TYPE RANGE OF name1_gp,
