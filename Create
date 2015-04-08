@@ -1,1 +1,6 @@
 
+
+
+* Read request data
+    DATA:  ls_request_input_data TYPE <EntityType declared in MPC>.
+    io_data_provider->read_entry_data( IMPORTING es_data = ls_request_input_data ).
