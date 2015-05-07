@@ -2,6 +2,7 @@
 *Get Filters
   DATA lt_filter_select_options TYPE /iwbep/t_mgw_select_option.
   DATA ls_filter TYPE /iwbep/s_mgw_select_option.
+  DATA ls_select_option TYPE /iwbep/s_cod_select_option.
   lt_filter_select_options = io_tech_request_context->get_filter( )->get_filter_select_options( ).
   "Replace 'Plant' with suitable name
   READ TABLE lt_filter_select_options INTO ls_filter WITH KEY property = 'Plant'.
