@@ -1,0 +1,109 @@
+  METHOD /iwbep/if_mgw_appl_srv_runtime~create_stream.
+
+    DATA: ls_fol_id       TYPE soodk,
+          ls_obj_data     TYPE sood1,
+          ls_attachemnt   TYPE <MPC_CLASS>=>ts_attachment,  "Of the Atatchemnt entity type
+          lt_file_solix   TYPE TABLE OF solix,
+          ls_obj_data_api TYPE sodocchgi1,
+          ls_doc_info     TYPE sofolenti1,
+          ls_content      TYPE soli,
+          lt_header       TYPE STANDARD TABLE OF soli,
+          lv_filename     TYPE string. "file name and ext
+
+    " The temporary location of the document to be uploaded
+    CALL FUNCTION 'SO_FOLDER_ROOT_ID_GET'
+      EXPORTING
+        region    = 'B'  " No authorization for Q : doucble check this
+      IMPORTING
+        folder_id = ls_fol_id
+      EXCEPTIONS
+        OTHERS    = 1.
+
+    IF sy-subrc NE 0.
+      "Raise exception
+      RAISE EXCEPTION TYPE /iwbep/cx_mgw_busi_exception
+        EXPORTING
+          textid            = /iwbep/cx_mgw_busi_exception=>business_error_unlimited
+          message_unlimited = 'File upload failed'.
+    ENDIF.
+
+    " Convert into solix/Binary table
+    lt_file_solix = cl_bcs_convert=>xstring_to_solix( iv_xstring = is_media_resource-value ).
+
+    ls_obj_data_api-obj_name = 'INFORMATION'. "par défaut
+    ls_obj_data_api-obj_langu = sy-langu.
+
+*   Get file name and extension
+    CALL METHOD cl_bcs_utilities=>split_name
+      EXPORTING
+        iv_name      = iv_slug  "iv_slug should have complete file name with extension. Ex:samplefile.docx
+        iv_delimiter = '.'
+      IMPORTING
+        ev_extension = ls_obj_data-file_ext.
+
+    "File name in input as File description
+    ls_obj_data_api-obj_descr = iv_slug.
+
+*   Object header
+    CLEAR ls_content.
+    CONCATENATE '&SO_FILENAME=' iv_slug INTO ls_content.
+    APPEND ls_content TO lt_header.
+
+    "Very important step. This length will be used when the stream is read to cut till this length
+    ls_obj_data_api-doc_size = xstrlen( is_media_resource-value ).
+
+    "Creating file
+    CALL FUNCTION 'SO_DOCUMENT_INSERT_API1'
+      EXPORTING
+        folder_id                  = ls_fol_id
+        document_data              = ls_obj_data_api
+        document_type              = ls_obj_data-file_ext
+      IMPORTING
+        document_info              = ls_doc_info
+      TABLES
+        contents_hex               = lt_file_solix
+        object_header              = lt_header
+      EXCEPTIONS
+        folder_not_exist           = 1
+        document_type_not_exist    = 2
+        operation_no_authorization = 3
+        parameter_error            = 4
+        x_error                    = 5
+        enqueue_error              = 6
+        OTHERS                     = 7.
+
+    IF sy-subrc EQ 0.
+      "File will be uploaded and this document ID is given back to the UI.
+      "Right now the document is not associated with the Business object (ex: sales Order).
+      "This method is getting called when a file is uploded, but the business object is yet to be created.
+      "UI will send this ID along with Business object creation call, so that they can be associated.
+      "If the business object is already present, (say updating a sales order), then this document ID will be
+      "associated with the Bsuiness object right away.
+      ls_attachemnt-id = ls_doc_info-doc_id.
+      ls_attachemnt-createdby = ls_doc_info-creat_name.
+      ls_attachemnt-createdbyname = ls_doc_info-creat_fnam.
+      ls_attachemnt-filename = iv_slug.
+
+      CONVERT DATE ls_doc_info-creat_date TIME ls_doc_info-creat_time
+      INTO TIME STAMP ls_attachemnt-createdat TIME ZONE sy-zonlo.
+
+      ls_attachemnt-mime_type = is_media_resource-mime_type.
+      ls_attachemnt-filesize = ls_doc_info-doc_size.
+      ls_attachemnt-filedescription = ls_doc_info-obj_descr.
+
+      copy_data_to_ref(
+        EXPORTING
+          is_data = ls_attachemnt
+        CHANGING
+          cr_data = er_entity ).
+
+    ELSE.
+      "Raise exception
+      RAISE EXCEPTION TYPE /iwbep/cx_mgw_busi_exception
+        EXPORTING
+          textid            = /iwbep/cx_mgw_busi_exception=>business_error_unlimited
+          message_unlimited = 'File upload failed'.
+
+    ENDIF.
+
+  ENDMETHOD.
