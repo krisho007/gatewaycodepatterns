@@ -1,1 +1,13 @@
 
+    DATA: ls_parameter  TYPE /iwbep/s_mgw_name_value_pair.
+    DATA: lt_parameters TYPE /iwbep/t_mgw_name_value_pair.
+
+    lt_parameters = io_tech_request_context->get_parameters( ).
+
+    CASE io_tech_request_context->get_function_import_name( ).
+    
+      WHEN ''.
+    
+      WHEN OTHERS.
+    
+    ENDCASE.
