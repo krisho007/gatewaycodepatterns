@@ -1,6 +1,5 @@
-    DATA lo_message_container TYPE REF TO /iwbep/if_message_container.
-    
     * Option 1: Using Message Container
+    DATA lo_message_container TYPE REF TO /iwbep/if_message_container.
     " get message container object
     lo_message_container = mo_context->get_message_container( ).
     
