@@ -21,4 +21,4 @@
     RAISE EXCEPTION TYPE /iwbep/cx_mgw_busi_exception
       EXPORTING
         textid                    = /iwbep/cx_mgw_busi_exception=>business_error_unlimited
-        message_unlimited = 'Your message text'.
+        message_unlimited         = 'I am the error message'.
