@@ -42,7 +42,15 @@
   ENDIF.
 
 *Top&Skip
-  DATA: lv_top  TYPE i.
-  DATA: lv_skip TYPE i.
-  lv_top = io_tech_request_context->get_top( ).
-  lv_skip = io_tech_request_context->get_skip( ).
+    DATA: lv_top        TYPE i.
+    DATA: lv_skip       TYPE i.
+    DATA: lv_total      TYPE i.
+    DATA: lv_start_from TYPE i.
+
+    lv_top = io_tech_request_context->get_top( ).
+    IF lv_top EQ 0.
+      lv_top = 100. "If $top was not sent, send maximum 100 rows
+    ENDIF.
+    lv_skip = io_tech_request_context->get_skip( ).
+    lv_total = lv_top + lv_skip.
+    lv_start_from = lv_skip + 1.
