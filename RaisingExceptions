@@ -1,1 +1,25 @@
-
+    DATA lo_message_container TYPE REF TO /iwbep/if_message_container.
+    
+    * Option 1: Using Message Container
+    " get message container object
+    lo_message_container = mo_context->get_message_container( ).
+    
+      *Option 1.1 - Add message from BAPI (BAPIRET2)
+      CALL METHOD lo_message_container->add_messages_from_bapi
+        EXPORTING
+          it_bapi_messages         = lt_return  "This has to be of type BAPIRET2
+          iv_determine_leading_msg = /iwbep/if_message_container=>gcs_leading_msg_search_option-first.
+        
+      *Option 1.2
+    
+    
+    *Raise Exception
+    RAISE EXCEPTION TYPE /iwbep/cx_mgw_busi_exception
+      EXPORTING
+        message_container = lo_message_container.
+    
+    *Option 2: Direct Use. Without /iwbep/if_message_container
+    RAISE EXCEPTION TYPE /iwbep/cx_mgw_busi_exception
+      EXPORTING
+        textid                    = /iwbep/cx_mgw_busi_exception=>business_error_unlimited
+        message_unlimited = 'Your message text'.
