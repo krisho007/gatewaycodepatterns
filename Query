@@ -11,6 +11,10 @@
       lv_plant = ls_select_option-low.
     ENDIF.
 
+*Get Open SQL WHERE Clause from $filter
+  DATA: lv_osql_where_clause TYPE string. 
+  lv_osql_where_clause = io_tech_request_context->get_osql_where_clause( ).
+
 *Get Source Keys. If query is through Navigation
   DATA: lt_parent_keys            TYPE /iwbep/t_mgw_tech_pairs,
         ls_parent_key             TYPE /iwbep/s_mgw_tech_pair.
