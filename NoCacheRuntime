@@ -1,0 +1,14 @@
+
+
+DATA: ls_response_header TYPE ihttpnvp.
+
+    "now prevent caching for all responses. Below response headers prevent caching
+    ls_response_header-name  = 'Cache-Control'.
+    ls_response_header-value = 'no-cache, no-store'.
+    set_header( ls_response_header ).
+    ls_response_header-name  = 'Pragma'.
+    ls_response_header-value = 'no-cache'.
+    set_header( ls_response_header ).
+    ls_response_header-name  = 'Expires'.
+    ls_response_header-value = '0'.
+    set_header( ls_response_header ).
