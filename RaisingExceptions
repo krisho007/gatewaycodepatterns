@@ -16,9 +16,12 @@
     RAISE EXCEPTION TYPE /iwbep/cx_mgw_busi_exception
       EXPORTING
         message_container = lo_message_container.
-    
-    *Option 2: Direct Use. Without /iwbep/if_message_container
-    RAISE EXCEPTION TYPE /iwbep/cx_mgw_busi_exception
-      EXPORTING
-        textid                    = /iwbep/cx_mgw_busi_exception=>business_error_unlimited
-        message_unlimited         = 'I am the error message'.
+   ----------------------    *Option 2: Direct Use. Without /iwbep/if_message_container---------------------------------
+      DATA: lv_message  TYPE string.
+
+      MESSAGE e000(Zmessage_class) INTO lv_message WITH sy-uname.
+
+      RAISE EXCEPTION TYPE /iwbep/cx_mgw_busi_exception
+        EXPORTING
+          textid            = /iwbep/cx_mgw_busi_exception=>business_error_unlimited
+          message_unlimited = lv_message.
