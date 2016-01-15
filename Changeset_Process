@@ -1,0 +1,32 @@
+  METHOD /iwbep/if_mgw_appl_srv_runtime~changeset_process.
+
+    DATA: ls_changeset_request  TYPE /iwbep/if_mgw_appl_types=>ty_s_changeset_request,
+          ls_changeset_response TYPE /iwbep/if_mgw_appl_types=>ty_s_changeset_response,
+          lt_group_request      TYPE /iwbep/if_mgw_appl_types=>ty_t_changeset_request.
+
+* Handle consecutive operations with the same operation types
+    LOOP AT it_changeset_request INTO ls_changeset_request.
+
+      " Operation Number in current changeset
+      ls_changeset_response-operation_no = ls_changeset_request-operation_no.
+      
+      "Read changeset data
+      ls_changeset_request-entry_provider->read_entry_data( IMPORTING es_data = ls_requirement ).
+
+      "Do your operation here
+      <<>>
+      
+      " Set response data
+      copy_data_to_ref(
+         EXPORTING
+           is_data = ls_requirement
+         CHANGING
+           cr_data = ls_changeset_response-entity_data ).
+
+      INSERT ls_changeset_response INTO TABLE ct_changeset_response.
+
+      CLEAR: ls_changeset_response.
+    ENDLOOP.
+
+
+  ENDMETHOD.
