@@ -1,0 +1,9 @@
+    DATA: ls_operation_info  TYPE /iwbep/s_mgw_operation_info.
+    
+    LOOP AT it_operation_info INTO ls_operation_info.
+      IF ls_operation_info-entity_set EQ <<EntityName>>.
+*       Defer Mode only for selected operations
+        cv_defer_mode = abap_true.
+        EXIT.
+      ENDIF.
+    ENDLOOP.
