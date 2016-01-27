@@ -54,3 +54,7 @@
     lv_skip = io_tech_request_context->get_skip( ).
     lv_total = lv_top + lv_skip.
     lv_start_from = lv_skip + 1.
+      "Remove rows to be skipped
+      IF lv_skip GT 0.
+        DELETE lt_customers FROM 1 TO lv_skip.
+      ENDIF.
