@@ -1,3 +1,93 @@
+DATA: lt_keys     TYPE /iwbep/t_mgw_tech_pairs,
+      ls_key      TYPE /iwbep/s_mgw_tech_pair.
+      
+* Get keys for the document
+    lt_keys = io_tech_request_context->get_keys( ).
+    READ TABLE lt_keys WITH KEY name = 'ORDERID' INTO ls_key.
+    IF sy-subrc EQ 0.
+      lv_customer = ls_key-value.
+    ENDIF.
 
+* Get device type from language
+  CALL FUNCTION 'SSF_GET_DEVICE_TYPE'
+    EXPORTING
+      i_language             = sy-langu
+*     i_application          = 'SAPDEFAULT'
+    IMPORTING
+      e_devtype              = lv_devtype
+    EXCEPTIONS
+      no_language            = 1
+      language_not_installed = 2
+      no_devtype_found       = 3
+      system_error           = 4
+      OTHERS                 = 5.
 
+* Get Smartform's FM Name  
+  CALL FUNCTION 'SSF_FUNCTION_MODULE_NAME'
+    EXPORTING
+      formname           = 'ZSMART_FORM_NAME'  "Smartform name
+*     formname           = formname
+    IMPORTING
+      fm_name            = lv_fm_name
+    EXCEPTIONS
+      no_form            = 1
+      no_function_module = 2
+      OTHERS             = 3.
 
+* Set device type in output options
+  ls_output_options-tdprinter = lv_devtype.
+* Set relevant output options
+  ls_output_options-tdnewid = 'X'. "Print parameters,
+  ls_output_options-tddelete = space. "Print parameters
+  
+* set control parameters to get the output text format (OTF) from Smart Forms
+  ls_control_parameters-langu = sy-langu.
+  TRANSLATE ls_control_parameters-langu TO UPPER CASE.
+  ls_control_parameters-no_dialog = 'X'.
+  ls_control_parameters-getotf   = 'X'.
+  ls_control_parameters-preview = space. "No preview
+
+* Call Smartform generated FM
+  CALL FUNCTION lv_fm_name
+    EXPORTING
+      control_parameters = ls_control_parameters
+      output_options     = ls_output_options
+      user_settings      = space
+      customer           = ls_customer
+      bookings           = lt_bookings
+      connections        = lt_connections
+    IMPORTING
+      job_output_info    = ls_output_data
+    EXCEPTIONS
+      formatting_error   = 1
+      internal_error     = 2
+      send_error         = 3
+      user_canceled      = 4
+      OTHERS             = 5.
+
+  APPEND LINES OF ls_output_data-otfdata[] TO lt_tstotf[].
+  
+  * Convert OTF to PDF
+  CALL FUNCTION 'CONVERT_OTF'
+    EXPORTING
+      format                = 'PDF'
+    IMPORTING
+      bin_filesize          = lv_pdf_len
+      bin_file              = lv_pdf_xstring       " binary file
+    TABLES
+      otf                   = lt_tstotf
+      lines                 = lt_lines
+    EXCEPTIONS
+      err_max_linewidth     = 1
+      err_format            = 2
+      err_conv_not_possible = 3
+      err_bad_otf           = 4
+      OTHERS                = 5.
+  IF sy-subrc = 0.
+    ls_stream-value = lv_pdf_xstring.
+  ENDIF.
+  "Mime type
+  ls_stream-mime_type = 'application/pdf'.
+  
+copy_data_to_ref( EXPORTING is_data = ls_stream
+                  CHANGING  cr_data = er_stream ).
