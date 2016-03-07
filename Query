@@ -4,8 +4,8 @@
   DATA ls_filter TYPE /iwbep/s_mgw_select_option.
   DATA ls_select_option TYPE /iwbep/s_cod_select_option.
   lt_filter_select_options = io_tech_request_context->get_filter( )->get_filter_select_options( ).
-  "Replace 'Plant' with suitable name
-  READ TABLE lt_filter_select_options INTO ls_filter WITH KEY property = 'Plant'.
+  "Replace 'PLANT' with suitable property name (all capitals)
+  READ TABLE lt_filter_select_options INTO ls_filter WITH KEY property = 'PLANT'.
     IF sy-subrc EQ 0.
       READ TABLE ls_filter-select_options INTO ls_select_option INDEX 1.
       lv_plant = ls_select_option-low.
