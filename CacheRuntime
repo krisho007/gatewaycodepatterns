@@ -1,0 +1,6 @@
+DATA: ls_header type ihttpnvp.
+ls_header-name = 'Cache-Control'.
+ls_header-value = 'max-age=3600'.
+set_header( ls_header ).
+
+"Keep in mind that if the query is called by a $batch, then browser will not be able to honor these http headers.
