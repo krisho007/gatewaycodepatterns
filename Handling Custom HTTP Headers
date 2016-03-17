@@ -8,3 +8,8 @@
     IF sy-subrc EQ 0.
       lv_header_value = ls_client_header-value.
     ENDIF.
+    
+    "Response Header
+    ls_client_header-name = 'Custom_header_name'.
+    ls_client_header-value = abap_true.
+    set_header( ls_client_header ).
