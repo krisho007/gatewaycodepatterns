@@ -1,0 +1,13 @@
+    DATA:
+          lo_annotation     TYPE REF TO /iwbep/if_mgw_odata_annotation, "#EC NEEDED
+          lo_entity_type    TYPE REF TO /iwbep/if_mgw_odata_entity_typ, "#EC NEEDED
+          lo_property       TYPE REF TO /iwbep/if_mgw_odata_property. "#EC NEEDED
+
+    "   Get the complete metadata first.
+    super->define( ).
+
+    "   Adding extra metadata now
+    lo_entity_type = model->get_entity_type( iv_entity_name = 'EmpDetail'). "Your entity name
+
+    lo_property = lo_entity_type->get_property( iv_property_name = 'MimeTyep' ). "Property in your entity which provides mimetype
+    lo_property->set_as_content_type( ).
