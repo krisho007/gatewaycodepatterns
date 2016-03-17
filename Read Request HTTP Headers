@@ -1,0 +1,12 @@
+    DATA:lo_request         TYPE REF TO /iwbep/if_mgw_core_srv_runtime=>ty_s_mgw_request_context,
+         lt_request_headers TYPE tihttpnvp,
+         ls_request_header  LIKE LINE OF lt_request_headers,
+         lv_request_value   TYPE string.
+
+    lo_request = io_tech_request_context->mr_request.
+    lt_request_headers = lo_request->technical_request-request_header.
+
+    READ TABLE lt_request_headers INTO ls_request_header WITH KEY name = 'If-None-Match'.
+    IF sy-subrc EQ 0.
+      lv_request_value = ls_request_header-value .
+    ENDIF.
