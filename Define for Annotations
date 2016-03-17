@@ -1,1 +1,6 @@
-"Define for annotations
+    
+    super->define( ). "Ensure you call the parent metadata
+    lo_entity_type = model->get_entity_type( iv_entity_name = 'EmpDetail'). "Your Entity Name
+    lo_property = lo_entity_type->get_property( iv_property_name = 'DateOfHire'). "Property inside your Entity
+    lo_annotation = lo_property-/iwbep/if_mgw_odata_annotatabl~create_annotation( /iwbep/if_mgw_med_odata_types=>gc_sap_namespace ). "SAP's annotations
+    lo_annotation->add( iv_key = 'display-format' iv_value = 'Date' ). "Specific annotation you want to add.
