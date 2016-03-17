@@ -2,6 +2,7 @@
             lt_client_headers TYPE tihttpnvp,
             ls_client_header  TYPE LINE OF tihttpnvp.
 
+    " Read request header
     lo_facade ?= /iwbep/if_mgw_conv_srv_runtime~get_dp_facade( ).
     lt_client_headers = lo_facade->get_request_header( ).
     READ TABLE lt_client_headers INTO ls_client_header WITH KEY name = 'If-None-Match'.
@@ -9,7 +10,7 @@
       lv_header_value = ls_client_header-value.
     ENDIF.
     
-    "Response Header
+    " Update Response Header
     ls_client_header-name = 'Custom_header_name'.
     ls_client_header-value = abap_true.
     set_header( ls_client_header ).
