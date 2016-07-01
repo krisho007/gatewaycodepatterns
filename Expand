@@ -1,5 +1,20 @@
 
+*===================data declarations for the expand strucutre===================================================
 types: begin of ty_s_so.
  include type z_salesorder_model_xx=>s_so_hdr.
- types: SOItems type ty_t_soitem,
+ types: SOItems type ty_t_soitem,  "SOItems is the navigation property name
 end of ty_s_so.
+
+*============"Tell the frameowork that all required fecthing is done and not to do generic expand. ===============
+ DATA: lt_children TYPE /iwbep/if_mgw_odata_expand=>ty_t_node_children,
+       ls_child    TYPE /iwbep/if_mgw_odata_expand=>ty_s_node_child.
+          
+* Get requested children
+    lt_children = io_expand->get_children( ).
+
+* Tell the framework that no more fetching required
+    LOOP AT lt_children INTO ls_child.
+      APPEND ls_child-tech_nav_prop_name TO et_expanded_tech_clauses.
+    ENDLOOP.
+    
+*=================================================================================================================    
