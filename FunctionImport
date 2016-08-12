@@ -11,3 +11,10 @@
       WHEN OTHERS.
     
     ENDCASE.
+
+    copy_data_to_ref(
+      EXPORTING
+        is_data = ls_summary
+      CHANGING
+        cr_data = er_data
+    ).
