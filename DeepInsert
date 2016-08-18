@@ -7,7 +7,7 @@
     TYPES: BEGIN OF lty_s_workorder.
             INCLUDE TYPE zcl_zworkorder_mpc=>ts_workorderdetail.
     TYPES: components TYPE STANDARD TABLE OF zcl_zworkorder_mpc=>ts_component WITH DEFAULT KEY,
-           operation  TYPE STANDARD TABLE OF zcl_zworkorder_mpc=>ts_operation WITH DEFAULT KEY.
+           operations  TYPE STANDARD TABLE OF zcl_zworkorder_mpc=>ts_operation WITH DEFAULT KEY.
     TYPES: END OF lty_s_workorder.
 
     DATA: ls_workorder TYPE lty_s_workorder.
