@@ -1,1 +1,88 @@
-Yet to be written
+
+*-----------------------------
+Reading GOS attachemnt details
+*-----------------------------
+
+* buseinss object key
+  DATA: gs_lpor TYPE sibflporb.
+*
+  gs_lpor-instid = p_matnr.   <<Object ID>>
+  gs_lpor-typeid = 'BUS1001006'. <<Object Type>>
+  gs_lpor-catid  = 'BO'.
+*
+* attachment type selection
+  DATA: lt_relat TYPE obl_t_relt,
+        la_relat LIKE LINE OF lt_relat.
+*
+  la_relat-sign = 'I'.
+  la_relat-option = 'EQ'.
+  la_relat-low = 'NOTE'. "For notes   'ATTA' for attachemnts
+  APPEND la_relat TO lt_relat.
+*
+* Read the links
+  DATA: t_links TYPE obl_t_link,
+        la_links LIKE LINE OF t_links.
+*
+  DATA: lo_root TYPE REF TO cx_root.
+*
+  TRY.
+      CALL METHOD cl_binary_relation=>read_links
+        EXPORTING
+          is_object           = gs_lpor
+          it_relation_options = lt_relat
+        IMPORTING
+          et_links            = t_links.
+    CATCH cx_root INTO lo_root.
+  ENDTRY.
+
+*---------
+* Read NOTE contents
+*---------
+  DATA l_folder_id TYPE soodk.
+  DATA l_object_id TYPE soodk.
+  DATA document_id       TYPE sofmk.
+*
+* Get document id
+  READ TABLE t_links INTO la_links INDEX 1.
+*
+  document_id = la_links-instid_b.
+*
+* Set folder
+  l_folder_id-objtp = document_id-foltp.
+  l_folder_id-objyr = document_id-folyr.
+  l_folder_id-objno = document_id-folno.
+*
+* Set Object
+  l_object_id-objtp = document_id-doctp.
+  l_object_id-objyr = document_id-docyr.
+  l_object_id-objno = document_id-docno.
+*
+* Read the document content
+  DATA document_content  TYPE STANDARD TABLE OF soli.
+*
+  CALL FUNCTION 'SO_OBJECT_READ'
+    EXPORTING
+      folder_id                  = l_folder_id
+      object_id                  = l_object_id
+    TABLES
+      objcont                    = document_content
+    EXCEPTIONS
+      active_user_not_exist      = 1
+      communication_failure      = 2
+      component_not_available    = 3
+      folder_not_exist           = 4
+      folder_no_authorization    = 5
+      object_not_exist           = 6
+      object_no_authorization    = 7
+      operation_no_authorization = 8
+      owner_not_exist            = 9
+      parameter_error            = 10
+      substitute_not_active      = 11
+      substitute_not_defined     = 12
+      system_failure             = 13
+      x_error                    = 14
+      OTHERS                     = 15.
+  IF sy-subrc NE 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+            WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
