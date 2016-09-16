@@ -8,8 +8,7 @@ METHOD /iwbep/if_mgw_appl_srv_runtime~changeset_begin.
     IF sy-subrc EQ 0.
 *       Defer Mode only for selected operations
       cv_defer_mode = abap_true.
-      EXIT.
     ENDIF.
-  
   ENDLOOP.
+  
 ENDMETHOD.  
