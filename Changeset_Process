@@ -14,15 +14,15 @@
       
       "Read Entity Name
       lo_request_context ?= ls_changeset_request-request_context.
-      lv_entity_type = lo_request_context->get_entity_type_name( ).
+      lv_entity_name = lo_request_context->get_entity_type_name( ).
       
-      CASE lv_entity_type.
+      CASE lv_entity_name.
         WHEN 'EntityOne'
           "Read changeset data (for POST/PUT)
            ls_changeset_request-entry_provider->read_entry_data( IMPORTING es_data = ls_requirement ).
 
           "Do your operation here
-          <<>>
+          
       
       " Set response data
       copy_data_to_ref(
