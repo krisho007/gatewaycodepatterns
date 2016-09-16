@@ -1,9 +1,15 @@
-    DATA: ls_operation_info  TYPE /iwbep/s_mgw_operation_info.
-    
-    LOOP AT it_operation_info INTO ls_operation_info.
-      IF ls_operation_info-entity_set EQ <<EntityName>>.
+METHOD /iwbep/if_mgw_appl_srv_runtime~changeset_begin.
+  
+  DATA: ls_operation_info  TYPE /iwbep/s_mgw_operation_info.
+  CONSTANTS: lc_entitysets TYPE string VALUE 'Operations,Components,WorkOrderSet'.
+
+  LOOP AT it_operation_info INTO ls_operation_info.
+    FIND FIRST OCCURRENCE OF ls_operation_info-entity_set IN lc_entitysets.
+    IF sy-subrc EQ 0.
 *       Defer Mode only for selected operations
-        cv_defer_mode = abap_true.
-        EXIT.
-      ENDIF.
-    ENDLOOP.
+      cv_defer_mode = abap_true.
+      EXIT.
+    ENDIF.
+  
+  ENDLOOP.
+ENDMETHOD.  
