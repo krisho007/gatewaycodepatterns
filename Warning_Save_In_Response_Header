@@ -1,0 +1,13 @@
+
+" Below code will get the message in Reposne header
+" In the DPC_EXT Class.
+
+lo_container = me->mo_context->get_message_container( ).
+lo_container->add_message(
+           iv_msg_type          = 'S'
+           iv_msg_id            = 'BL'
+           iv_msg_number        = 308
+           iv_msg_v1            = 'Success'
+           iv_is_leading_message     = abap_true
+           iv_add_to_response_header = abap_true    
+).
