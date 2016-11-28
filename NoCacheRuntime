@@ -12,3 +12,6 @@ DATA: ls_response_header TYPE ihttpnvp.
     ls_response_header-name  = 'Expires'.
     ls_response_header-value = '0'.
     set_header( ls_response_header ).
+    
+    "Using Headers
+    chs_response_context-do_not_cache_on_client   = abap_true.
