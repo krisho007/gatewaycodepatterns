@@ -2,6 +2,7 @@
 
     DATA: ls_changeset_request  TYPE /iwbep/if_mgw_appl_types=>ty_s_changeset_request,
           ls_changeset_response TYPE /iwbep/if_mgw_appl_types=>ty_s_changeset_response,
+          lo_request_context_d  TYPE REF TO /iwbep/if_mgw_req_entity_d,
           lt_group_request      TYPE /iwbep/if_mgw_appl_types=>ty_t_changeset_request,
           lv_entity_name        TYPE /iwbep/mgw_tech_name,
           lo_request_context    TYPE REF TO /iwbep/if_mgw_req_entity_c.
@@ -21,6 +22,14 @@
           "Read changeset data (for POST/PUT)
            ls_changeset_request-entry_provider->read_entry_data( IMPORTING es_data = ls_requirement ).
 
+          "Read keys for (DELETE/PUT)
+           lo_request_context_d ?= ls_changeset_request-request_context.
+           lt_keys = lo_request_context_d->get_keys( ).
+           READ TABLE lt_keys INTO ls_key WITH KEY name = 'ORDERNUMBER'.
+           IF sy-subrc EQ 0.
+             ls_operation-ordernumber = ls_key-value.
+           ENDIF.
+            
           "Do your operation here
           
       
@@ -37,6 +46,5 @@
       WHEN OTHERS.
       ENDCASE.
     ENDLOOP.
-
 
   ENDMETHOD.
