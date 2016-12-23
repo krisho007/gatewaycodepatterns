@@ -1,1 +1,9 @@
+    DATA: lt_keys TYPE /iwbep/t_mgw_tech_pairs,
+          ls_key  TYPE LINE OF /iwbep/t_mgw_tech_pairs.
 
+    "Keys to be read
+    lt_keys = io_tech_request_context->get_keys( ).
+    READ TABLE lt_keys INTO ls_key WITH KEY name = 'DOCUMENTNO'.
+    IF sy-subrc EQ 0.
+      lv_doc_number = ls_key-value.
+    ENDIF.
