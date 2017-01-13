@@ -58,3 +58,23 @@
       IF lv_skip GT 0.
         DELETE lt_customers FROM 1 TO lv_skip.
       ENDIF.
+
+*Orderby
+    DATA: lt_order    TYPE  /iwbep/t_mgw_tech_order.
+    DATA: ls_order LIKE LINE OF lt_order.
+    DATA: lt_otab TYPE abap_sortorder_tab,
+          ls_otab TYPE abap_sortorder.
+          
+    lt_order = io_tech_request_context->get_orderby( ).
+    IF lt_order IS NOT INITIAL.
+      LOOP AT lt_order INTO ls_order.
+        ls_otab-name = ls_order-property.
+        IF ls_order-order = lcs_sorting_order-descending.
+          ls_otab-descending = abap_true.
+        ELSE.
+          ls_otab-descending = abap_false.
+        ENDIF.
+        APPEND ls_otab TO lt_otab.
+      ENDLOOP.
+      SORT et_entityset BY (lt_otab).
+    ENDIF.
