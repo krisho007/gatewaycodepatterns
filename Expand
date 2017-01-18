@@ -1,9 +1,12 @@
 
 *===================data declarations for the expand strucutre===================================================
-types: begin of ty_s_so.
- include type z_salesorder_model_xx=>s_so_hdr.
- types: SOItems type ty_t_soitem,  "SOItems is the navigation property name
-end of ty_s_so.
+    TYPES: BEGIN OF lty_s_workorder.
+            INCLUDE TYPE zcl_zworkorder_mpc=>ts_workorderdetail.
+    TYPES: components        TYPE STANDARD TABLE OF zcl_zworkorder_mpc=>ts_component WITH DEFAULT KEY,
+           operations        TYPE STANDARD TABLE OF zcl_zworkorder_mpc=>ts_operation WITH DEFAULT KEY,
+           damagecodegroups  TYPE STANDARD TABLE OF zcl_zworkorder_mpc=>ts_damagecodegroup WITH DEFAULT KEY,
+           notificationunits TYPE STANDARD TABLE OF zcl_zworkorder_mpc=>ts_unit WITH DEFAULT KEY.
+    TYPES: END OF lty_s_workorder.
 
 *============"Tell the frameowork that all required fecthing is done and not to do generic expand. ===============
  DATA: lt_children TYPE /iwbep/if_mgw_odata_expand=>ty_t_node_children,
