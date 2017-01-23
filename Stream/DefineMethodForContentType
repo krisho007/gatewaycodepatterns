@@ -1,0 +1,9 @@
+    DATA:
+      lo_entity_type TYPE REF TO /iwbep/if_mgw_odata_entity_typ,
+      lo_property    TYPE REF TO /iwbep/if_mgw_odata_property.
+
+    CALL METHOD super->define( ).
+
+    lo_entity_type = model->get_entity_type( iv_entity_name = 'Attachment' ). //Media type entity within your model
+    lo_property = lo_entity_type->get_property( iv_property_name = 'mime_type' ).  //Property within your entity which represents content type of the attachment.
+    lo_property->set_as_content_type( ).
