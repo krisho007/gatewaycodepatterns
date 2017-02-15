@@ -1,8 +1,9 @@
 
 *Get Filters
-  DATA lt_filter_select_options TYPE /iwbep/t_mgw_select_option.
-  DATA ls_filter TYPE /iwbep/s_mgw_select_option.
-  DATA ls_select_option TYPE /iwbep/s_cod_select_option.
+  DATA: lt_filter_select_options TYPE /iwbep/t_mgw_select_option,
+        ls_filter TYPE /iwbep/s_mgw_select_option.
+        ls_select_option TYPE /iwbep/s_cod_select_option.
+        
   lt_filter_select_options = io_tech_request_context->get_filter( )->get_filter_select_options( ).
   "Replace 'PLANT' with suitable property name (all capitals)
   READ TABLE lt_filter_select_options INTO ls_filter WITH KEY property = 'PLANT'.
@@ -29,8 +30,8 @@
   ENDIF.
 
 *Get Open search string
-  DATA: lv_search_string  TYPE string.
-  DATA: ltr_vendor_name   TYPE RANGE OF name1_gp,
+  DATA: lv_search_string  TYPE string,
+        ltr_vendor_name   TYPE RANGE OF name1_gp,
         lsr_vendor_name   LIKE LINE OF ltr_vendor_name.
   lv_search_string = io_tech_request_context->get_search_string( ).
   "Create a range table to be used in a SELECT statement. Replace 'Vendor' above
@@ -42,10 +43,10 @@
   ENDIF.
 
 *Top&Skip
-    DATA: lv_top        TYPE i.
-    DATA: lv_skip       TYPE i.
-    DATA: lv_total      TYPE i.
-    DATA: lv_start_from TYPE i.
+    DATA: lv_top        TYPE i,
+          lv_skip       TYPE i,
+          lv_total      TYPE i,
+          lv_start_from TYPE i.
 
     lv_top = io_tech_request_context->get_top( ).
     IF lv_top EQ 0.
@@ -60,9 +61,9 @@
       ENDIF.
 
 *Orderby
-    DATA: lt_order    TYPE  /iwbep/t_mgw_tech_order.
-    DATA: ls_order LIKE LINE OF lt_order.
-    DATA: lt_otab TYPE abap_sortorder_tab,
+    DATA: lt_order    TYPE  /iwbep/t_mgw_tech_order,
+          ls_order LIKE LINE OF lt_order,
+          lt_otab TYPE abap_sortorder_tab,
           ls_otab TYPE abap_sortorder.
           
     lt_order = io_tech_request_context->get_orderby( ).
