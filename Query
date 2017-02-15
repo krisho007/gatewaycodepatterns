@@ -1,7 +1,7 @@
 
 *Get Filters
   DATA: lt_filter_select_options TYPE /iwbep/t_mgw_select_option,
-        ls_filter TYPE /iwbep/s_mgw_select_option.
+        ls_filter TYPE /iwbep/s_mgw_select_option,
         ls_select_option TYPE /iwbep/s_cod_select_option.
         
   lt_filter_select_options = io_tech_request_context->get_filter( )->get_filter_select_options( ).
