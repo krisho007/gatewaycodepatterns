@@ -20,4 +20,11 @@
       io_data_provider->read_entry_data( IMPORTING es_data = ls_workorder ).
     ENDIF.
 
+ * Send back
+    copy_data_to_ref(
+      EXPORTING
+        is_data = ls_payload
+      CHANGING
+        cr_data = er_deep_entity ).
+
   ENDMETHOD.
