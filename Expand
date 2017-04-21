@@ -8,16 +8,13 @@
            notificationunits TYPE STANDARD TABLE OF zcl_zworkorder_mpc=>ts_unit WITH DEFAULT KEY.
     TYPES: END OF lty_s_workorder.
 
-*============"Tell the frameowork that all required fecthing is done and not to do generic expand. ===============
- DATA: lt_children TYPE /iwbep/if_mgw_odata_expand=>ty_t_node_children,
-       ls_child    TYPE /iwbep/if_mgw_odata_expand=>ty_s_node_child.
-          
-* Get requested children
-    lt_children = io_expand->get_children( ).
-
-* Tell the framework that no more fetching required
-    LOOP AT lt_children INTO ls_child.
-      APPEND ls_child-tech_nav_prop_name TO et_expanded_tech_clauses.
-    ENDLOOP.
+*============"Tell the framework that all required fecthing is done and not to do generic expand. ===============
+    DATA: lo_request TYPE REF TO /iwbep/cl_mgw_request.
+    lo_request ?= io_tech_request_context.
+    DATA(lv_expand) = lo_request->/iwbep/if_mgw_req_entityset~get_expand( ).
+    TRANSLATE lv_expand TO UPPER CASE.
+    SPLIT lv_expand AT ',' INTO TABLE et_expanded_tech_clauses.
     
+    //Note: For the above code to work, "ABAP Field Name"of the Navigation properties have to be same (Uppercase) 
+    //as the navigation property name (in SEGW).
 *=================================================================================================================    
