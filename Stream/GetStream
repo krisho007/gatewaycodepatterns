@@ -86,3 +86,12 @@ Reading GOS attachemnt details
     MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
             WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
   ENDIF.
+
+ +++++++++++++++++++++++++++++++++++
+ " Download or Preview the pdf ?
++++++++++++++++++++++++++++++++++++ 
+DATA ls_lheader TYPE ihttpnvp.
+ls_lheader–name = ‘Content-Disposition’.
+ls_lheader–value = ‘outline; filename=”Mobile.pdf”;’.  //Download
+ls_lheader–value = ‘inline; filename=”Mobile.pdf”;’.   //Preview
+set_header( is_header = ls_lheader ).
