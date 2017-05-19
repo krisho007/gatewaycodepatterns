@@ -91,3 +91,13 @@ DATA: lt_keys     TYPE /iwbep/t_mgw_tech_pairs,
   
 copy_data_to_ref( EXPORTING is_data = ls_stream
                   CHANGING  cr_data = er_stream ).
+
+  
+ +++++++++++++++++++++++++++++++++++
+ " Download or Preview the pdf ?
++++++++++++++++++++++++++++++++++++ 
+DATA ls_lheader TYPE ihttpnvp.
+ls_lheader–name = ‘Content-Disposition’.
+ls_lheader–value = ‘outline; filename=”Mobile.pdf”;’.  //Download
+ls_lheader–value = ‘inline; filename=”Mobile.pdf”;’.   //Preview
+set_header( is_header = ls_lheader ).
