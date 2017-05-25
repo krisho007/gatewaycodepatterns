@@ -1,0 +1,2 @@
+-> Hub layer sends calls to the backend from class /IWFND/CL_MGW_REQUEST_MANAGER->CALL_BEP. 
+If the backend debugger does not trigger, do a F5 into the RFC call inside this class.
