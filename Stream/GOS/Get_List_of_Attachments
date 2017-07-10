@@ -1,0 +1,85 @@
+METHOD get_header_gos_attachments.
+
+  DATA: ls_doc_data     TYPE sofolenti1,
+        ls_docid        TYPE sofolenti1-doc_id,
+        ls_attachment   TYPE gbapps_attachments,
+        lt_links        TYPE obl_t_link,
+        ls_filter       TYPE sofilteri1,
+        ls_links        TYPE obl_s_link,
+        ls_lporb        TYPE sibflporb.
+
+  DATA: lv_date         TYPE string.
+  ls_lporb-instid = iv_doc_number.
+  ls_lporb-catid = 'BO'.
+
+  CASE iv_doc_type.
+    WHEN if_gbapp_apv_constants=>cc_application_type_po.
+      ls_lporb-typeid = 'BUS2012'.
+    WHEN if_gbapp_apv_constants=>cc_application_type_pr.
+      ls_lporb-typeid = 'BUS2105'.
+    WHEN OTHERS.
+      EXIT.
+  ENDCASE.
+
+  TRY      .
+      CALL METHOD cl_binary_relation=>read_links_of_binrel
+        EXPORTING
+          is_object   = ls_lporb
+          ip_relation = 'ATTA'
+          ip_role     = 'GOSAPPLOBJ'
+        IMPORTING
+          et_links    = lt_links.
+
+    CATCH cx_obl_parameter_error .                      "#EC NO_HANDLER
+    CATCH cx_obl_internal_error .                       "#EC NO_HANDLER
+    CATCH cx_obl_model_error .                          "#EC NO_HANDLER
+  ENDTRY.
+
+  ls_filter-send_info  = 'X'.
+  ls_filter-no_content = 'X'.
+
+  LOOP AT lt_links INTO ls_links.
+
+    CLEAR : ls_docid, ls_doc_data, ls_attachment.
+
+    ls_docid = ls_links-instid_b.
+
+    CALL FUNCTION 'SO_DOCUMENT_READ_API1'
+      EXPORTING
+        document_id                = ls_docid
+        filter                     = ls_filter
+      IMPORTING
+        document_data              = ls_doc_data
+      EXCEPTIONS
+        document_id_not_exist      = 1
+        operation_no_authorization = 2
+        x_error                    = 3
+        OTHERS                     = 4.
+    IF sy-subrc EQ 0.
+
+      ls_attachment-object_id = iv_doc_number.
+      ls_attachment-attach_guid = ls_docid.
+      ls_attachment-description = ls_doc_data-obj_descr.
+
+      SET LOCALE LANGUAGE sy-langu.
+      ls_attachment-file_name = ls_doc_data-obj_descr.
+      CONCATENATE ls_attachment-file_name '.' ls_doc_data-obj_type INTO ls_attachment-file_name.
+      ls_attachment-created_by_id = ls_doc_data-creat_name.
+      ls_attachment-created_by_name = ls_doc_data-creat_fnam.
+      CONCATENATE ls_doc_data-creat_date ls_doc_data-creat_time INTO lv_date.
+      ls_attachment-created_at = lv_date.
+      ls_attachment-is_gos_attachment = abap_true.
+      ls_attachment-file_size = ls_doc_data-doc_size.
+      SHIFT ls_attachment-file_size  LEFT DELETING LEADING '0'.
+* compute mimetype
+      CALL FUNCTION 'SDOK_MIMETYPE_GET'
+        EXPORTING
+          extension = ls_doc_data-obj_type
+        IMPORTING
+          mimetype  = ls_attachment-mime_type.
+
+      APPEND ls_attachment TO et_attachments.
+    ENDIF.
+  ENDLOOP.
+
+ENDMETHOD.
