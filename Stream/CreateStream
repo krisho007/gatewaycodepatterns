@@ -79,23 +79,37 @@
       "UI will send this ID along with Business object creation call, so that they can be associated.
       "If the business object is already present, (say updating a sales order), then this document ID will be
       "associated with the Bsuiness object right away.
-      ls_attachemnt-id = ls_doc_info-doc_id.
-      ls_attachemnt-createdby = ls_doc_info-creat_name.
-      ls_attachemnt-createdbyname = ls_doc_info-creat_fnam.
-      ls_attachemnt-filename = iv_slug.
+
+      "Associate the uploaded file to the PR
+      ls_object-objkey = iv_doc_number.
+      ls_object-objtype = 'BUS2105'.  "Purchase Requisition
+
+      ls_document-objtype = 'MESSAGE'.
+      ls_document-objkey = ls_doc_info-doc_id.
+
+      CALL FUNCTION 'BINARY_RELATION_CREATE_COMMIT'
+        EXPORTING
+          obj_rolea      = ls_object
+          obj_roleb      = ls_document
+          relationtype   = 'ATTA'
+        EXCEPTIONS ##FM_SUBRC_OK
+          no_model       = 1
+          internal_error = 2
+          unknown        = 3
+          OTHERS         = 4.
+
+      es_attachment-prnumber = iv_doc_number.
+      es_attachment-id = ls_doc_info-doc_id.
+      es_attachment-createdby = ls_doc_info-creat_name.
+      es_attachment-createdbyname = ls_doc_info-creat_fnam.
+      es_attachment-filename = iv_slug.
 
       CONVERT DATE ls_doc_info-creat_date TIME ls_doc_info-creat_time
-      INTO TIME STAMP ls_attachemnt-createdat TIME ZONE sy-zonlo.
+      INTO TIME STAMP es_attachment-createdat TIME ZONE sy-zonlo.
 
-      ls_attachemnt-mime_type = is_media_resource-mime_type.
-      ls_attachemnt-filesize = ls_doc_info-doc_size.
-      ls_attachemnt-filedescription = ls_doc_info-obj_descr.
-
-      copy_data_to_ref(
-        EXPORTING
-          is_data = ls_attachemnt
-        CHANGING
-          cr_data = er_entity ).
+      es_attachment-mime_type = is_media_resource-mime_type.
+      es_attachment-filesize = ls_doc_info-doc_size.
+      es_attachment-filedescription = ls_doc_info-obj_descr.
 
     ELSE.
       "Raise exception
