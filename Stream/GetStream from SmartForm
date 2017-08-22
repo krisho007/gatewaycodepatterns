@@ -1,4 +1,5 @@
 DATA: lt_keys     TYPE /iwbep/t_mgw_tech_pairs,
+      ls_stream   TYPE ty_s_media_resource,
       ls_key      TYPE /iwbep/s_mgw_tech_pair.
       
 * Get keys for the document
