@@ -74,7 +74,7 @@ METHOD get_header_gos_attachments.
       
 * compute mimetype
           DATA: lv_file_name TYPE skwf_filnm.
-          lv_file_name = ls_doc_data-obj_descr.
+          lv_file_name = ls_attachment-file_name.
           CALL FUNCTION 'SKWF_MIMETYPE_OF_FILE_GET'
             EXPORTING
               filename = lv_file_name
