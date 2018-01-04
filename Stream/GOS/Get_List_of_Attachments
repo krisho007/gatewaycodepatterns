@@ -71,12 +71,15 @@ METHOD get_header_gos_attachments.
       ls_attachment-is_gos_attachment = abap_true.
       ls_attachment-file_size = ls_doc_data-doc_size.
       SHIFT ls_attachment-file_size  LEFT DELETING LEADING '0'.
+      
 * compute mimetype
-      CALL FUNCTION 'SDOK_MIMETYPE_GET'
-        EXPORTING
-          extension = ls_doc_data-obj_type
-        IMPORTING
-          mimetype  = ls_attachment-mime_type.
+          DATA: lv_file_name TYPE skwf_filnm.
+          lv_file_name = ls_doc_data-obj_descr.
+          CALL FUNCTION 'SKWF_MIMETYPE_OF_FILE_GET'
+            EXPORTING
+              filename = lv_file_name
+            IMPORTING
+              mimetype = ls_attachment-mime_type.
 
       APPEND ls_attachment TO et_attachments.
     ENDIF.
