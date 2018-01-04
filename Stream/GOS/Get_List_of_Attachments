@@ -63,7 +63,7 @@ METHOD get_header_gos_attachments.
 
       SET LOCALE LANGUAGE sy-langu.
       ls_attachment-file_name = ls_doc_data-obj_descr.
-      CONCATENATE ls_attachment-file_name '.' ls_doc_data-obj_type INTO ls_attachment-file_name.
+*      CONCATENATE ls_attachment-file_name '.' ls_doc_data-obj_type INTO ls_attachment-file_name.
       ls_attachment-created_by_id = ls_doc_data-creat_name.
       ls_attachment-created_by_name = ls_doc_data-creat_fnam.
       CONCATENATE ls_doc_data-creat_date ls_doc_data-creat_time INTO lv_date.
