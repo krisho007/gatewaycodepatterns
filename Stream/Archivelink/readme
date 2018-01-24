@@ -1,2 +1,5 @@
 Class ZCL_CONTENT_REPOSITORY will fetch BOTH GOS and ARCHIVELINK attachments.
 
+Method GET_DOCUMENTS_FOR_OBJECT provides a list of attachments for a Business Object
+Method ENHANCE_ATTACHMENT_CONTENT provides content of the attachment.
+
