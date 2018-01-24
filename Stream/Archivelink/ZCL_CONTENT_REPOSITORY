@@ -1,0 +1,466 @@
+*----------------------------------------------------------------------*
+*       CLASS ZCL_CONTENT_REPOSITORY DEFINITION
+*----------------------------------------------------------------------*
+*
+*----------------------------------------------------------------------*
+CLASS ZCL_CONTENT_REPOSITORY DEFINITION
+  PUBLIC
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    TYPES:
+      BEGIN OF ts_document,
+              object_id       TYPE saeobjid,
+              business_object TYPE saeanwdid,
+              file_type       TYPE saeobjart,
+              arc_doc_id      TYPE toa01-arc_doc_id,
+              filename        TYPE toaat-filename,
+              description     TYPE toaat-descr,
+              binlength       TYPE sapb-length,
+*            contents        type TSFIXML,
+              contents        TYPE STANDARD TABLE OF tbl1024 WITH DEFAULT KEY,    " From ARCHIVOBJECT_GET_BYTES, BINARCHIVOBJECT
+            END OF ts_document .
+    TYPES:
+      tt_documents TYPE STANDARD TABLE OF ts_document WITH DEFAULT KEY .
+    TYPES:
+      tt_metadata       TYPE STANDARD TABLE OF toaom     WITH DEFAULT KEY .
+    TYPES:
+      tt_document_types TYPE RANGE OF saeobjart.
+
+    METHODS get_documents_for_object
+      IMPORTING
+        !iv_object_id TYPE saeobjid
+        !iv_sap_object TYPE saeanwdid
+        !it_document_types TYPE tt_document_types OPTIONAL
+      RETURNING
+        value(rt_documents) TYPE tt_documents .
+    METHODS enhance_attachment_content
+      IMPORTING
+        !iv_attach_key TYPE so_entryid
+      CHANGING
+        !cv_mime_type TYPE w3conttype
+        !cv_stream TYPE xstring
+        !cv_file_name TYPE sdok_filnm .
+  PROTECTED SECTION.
+private section.
+
+  methods CHECK_FOR_HTML_PAGE
+    changing
+      !CS_DOCUMENT type TS_DOCUMENT .
+  methods GET_ATTACHMENTS
+    importing
+      !IV_OBJECT_ID type SAEOBJID
+      !IS_METADATA type TOAOM
+    returning
+      value(RT_DOCUMENTS) type TT_DOCUMENTS .
+  methods GET_DOCUMENT_FILE_INFO
+    importing
+      !IV_ARCHIVE_DOC_ID type TOAAT-ARC_DOC_ID
+    exporting
+      !EV_FILENAME type TOAAT-FILENAME
+      !EV_DESCRIPTION type TOAAT-DESCR .
+  methods GET_METADATA_FOR_SAP_OBJECT
+    importing
+      !IV_SAP_OBJECT type SAEANWDID
+      !IT_DOCUMENT_TYPES type TT_DOCUMENT_TYPES optional
+    returning
+      value(RT_METADATA) type TT_METADATA .
+  methods GET_DETAIL
+    importing
+      !IV_OBJECT_ID type SAEOBJID
+      !IS_METADATA type TOAOM
+      !IS_CONNECTION type TOAV0
+    returning
+      value(RS_DOCUMENT) type TS_DOCUMENT .
+ENDCLASS.
+
+
+
+CLASS ZCL_CONTENT_REPOSITORY IMPLEMENTATION.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method ZCL_CONTENT_REPOSITORY->CHECK_FOR_HTML_PAGE
+* +-------------------------------------------------------------------------------------------------+
+* | [<-->] CS_DOCUMENT                    TYPE        TS_DOCUMENT
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+METHOD check_for_html_page.
+
+  TYPES:
+    BEGIN OF ts_1024,
+      line TYPE text1024,
+    END OF ts_1024,
+
+    tt_1024 TYPE STANDARD TABLE OF ts_1024.
+
+  DATA:
+    lv_file_type TYPE ZCL_CONTENT_REPOSITORY=>ts_document-file_type,
+    lt_text      TYPE tt_1024,
+    ls_text      LIKE LINE OF lt_text,
+    ls_content   LIKE LINE OF cs_document-contents.
+
+*-- If you are getting the same length for all documents retrieved,
+*-- or if the document returned is HTML, but the extension stored is not,
+*-- it is probably a web page with additional information.  When this
+*-- happened to me, it was because the ICC Connector to FileNet was setup
+*-- to use the Content Repository viewer instead of the SAP internal viewer.
+*--
+*-- This was done becauce the SAP internal viewer did not limit access to the
+*-- documents that could be viewed.  If you can view the PO, then you can view
+*-- the attachments.
+*--
+*-- As long as the ICC config is set up this way, it is not possible to donwload
+*-- or view attachments via the Fiori Approvals App.  The reason for this is that
+*-- FileNet is not available outside of the local network.
+
+*-- To check for this condition, convert the document to text, and
+*-- see if it is an HTML document.  This is only to be done for
+*-- documents that do not have an HTM or HTML extenstion.  Otherwise
+*-- valid HTML documents will look like false positives.  The downside
+*-- is that if the error happens with an actual HTML document, the
+*-- issue will not be caught
+
+  lv_file_type = cs_document-file_type.
+
+  TRANSLATE lv_file_type TO UPPER CASE.
+
+  CHECK lv_file_type NE 'HTM'
+    AND lv_file_type NE 'HTML'.
+
+  READ TABLE cs_document-contents INTO ls_content INDEX 1.
+
+  CHECK ls_content-line(15) = `3C21444F43545950452068746D6C3E`.   " <!DOCTYPE html> in RAW format
+
+*-- Convert file contents to text
+  cl_rsz_www_db_interface=>convert_raw_to_char(
+    EXPORTING
+      i_t_in  = cs_document-contents
+    IMPORTING
+      e_t_out = lt_text
+  ).
+
+*-- Change the document type and extension so it can be loaded as an HTML doc
+*-- Add some explanation
+  ls_text-line = `The original document was not returned from FileNet.  This usually happens when ICC connector to FileNet` && cl_abap_char_utilities=>cr_lf &&
+                 `has  been configured to use the Content Navigator, and not the internal SAP Viewer.`                      && cl_abap_char_utilities=>cr_lf &&
+                 cl_abap_char_utilities=>cr_lf &&
+                 `The original document is below:`                                                                          && cl_abap_char_utilities=>cr_lf &&
+                 cl_abap_char_utilities=>cr_lf.
+
+  INSERT ls_text INTO lt_text INDEX 1.
+
+*  INSERT `The original document was not returned from FileNet.  This usually happens when ICC connector to FileNet` INTO lt_text INDEX 1.
+*  INSERT `has  been configured to use the Content Navigator, and not the internal SAP Viewer.`                      INTO lt_text INDEX 2.
+*  INSERT ``                                                                                                         INTO lt_text INDEX 3.
+*  INSERT `The original document is below:`                                                                          INTO lt_text INDEX 4.
+*  INSERT ``                                                                                                         INTO lt_text INDEX 5.
+
+  cl_rsz_www_db_interface=>convert_char_to_raw(
+    EXPORTING
+      i_t_in  = lt_text
+    IMPORTING
+      e_t_out = cs_document-contents
+  ).
+
+  cs_document-description = `Error reading from FileNet: ` && cs_document-description.
+  cs_document-file_type   = 'Text'.
+  cs_document-filename    = cs_document-filename && `.txt`.
+
+ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZCL_CONTENT_REPOSITORY->ENHANCE_ATTACHMENT_CONTENT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IV_ATTACH_KEY                  TYPE        SO_ENTRYID
+* | [<-->] CV_MIME_TYPE                   TYPE        W3CONTTYPE
+* | [<-->] CV_STREAM                      TYPE        XSTRING
+* | [<-->] CV_FILE_NAME                   TYPE        SDOK_FILNM
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+METHOD enhance_attachment_content.
+
+  DATA:
+    lv_arc_doc_id         TYPE toav0-arc_doc_id,
+    lv_doc_type           TYPE saeobjart,
+    ls_document           TYPE ts_document,
+    lv_content            TYPE LINE OF ts_document-contents,
+    lv_input_length       TYPE i,
+    lv_string             TYPE string,
+    lv_xstring            TYPE xstring,
+    ls_metadata           TYPE toaom,
+    lt_connections        TYPE STANDARD TABLE OF toav0,
+    ls_connection         LIKE LINE OF lt_connections.
+
+*-- Get the connection for the requested document
+  lv_arc_doc_id = iv_attach_key.
+
+  CALL FUNCTION 'ARCHIV_GET_CONNECTIONS'
+    EXPORTING
+      arc_doc_id    = lv_arc_doc_id
+    TABLES
+      connections   = lt_connections
+    EXCEPTIONS
+      nothing_found = 1
+      OTHERS        = 2.
+
+  READ TABLE lt_connections INTO ls_connection
+    WITH KEY arc_doc_id = lv_arc_doc_id.
+
+  IF sy-subrc = 0.
+
+    CLEAR:
+      cv_mime_type,
+      cv_stream,
+      cv_file_name.
+
+
+*-- Pass empty LS_METADATA.  The only value from the is the Business Object
+*-- which we don't have anyway
+    ls_document = me->get_detail(
+                                  iv_object_id  = space
+                                  is_metadata   = ls_metadata
+                                  is_connection = ls_connection
+                                ).
+
+    cv_file_name = ls_document-filename.
+
+    lv_input_length = ls_document-binlength.
+
+    CALL FUNCTION 'SCMS_BINARY_TO_XSTRING'
+      EXPORTING
+        input_length = lv_input_length
+      IMPORTING
+        buffer       = cv_stream
+      TABLES
+        binary_tab   = ls_document-contents
+      EXCEPTIONS
+        failed       = 1
+        OTHERS       = 2.
+
+    CALL FUNCTION 'SDOK_MIMETYPE_GET'
+      EXPORTING
+        extension = ls_document-file_type
+      IMPORTING
+        mimetype  = cv_mime_type.
+
+  ENDIF.
+
+ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method ZCL_CONTENT_REPOSITORY->GET_ATTACHMENTS
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IV_OBJECT_ID                   TYPE        SAEOBJID
+* | [--->] IS_METADATA                    TYPE        TOAOM
+* | [<-()] RT_DOCUMENTS                   TYPE        TT_DOCUMENTS
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_attachments.
+
+    DATA:
+      ls_document    LIKE LINE OF rt_documents,
+      lt_connections TYPE STANDARD TABLE OF toav0,
+      ls_connection  LIKE LINE OF lt_connections.
+
+*-- Get all of the connections to the attachments
+    CALL FUNCTION 'ARCHIV_GET_CONNECTIONS'
+      EXPORTING
+        objecttype    = is_metadata-sap_object
+        object_id     = iv_object_id
+        archiv_id     = is_metadata-archiv_id
+        documenttype  = is_metadata-ar_object
+      TABLES
+        connections   = lt_connections
+      EXCEPTIONS
+        nothing_found = 1
+        OTHERS        = 2.
+
+*-- For each attachment, get the contents from the Content Repository
+    LOOP AT lt_connections INTO ls_connection.
+
+      ls_document = get_detail(
+                                is_connection = ls_connection
+                                is_metadata   = is_metadata
+                                iv_object_id  = iv_object_id
+                              ).
+
+      IF ls_document IS NOT INITIAL.
+        APPEND ls_document TO rt_documents.
+      ENDIF.
+
+    ENDLOOP.
+
+
+  ENDMETHOD.                    "get_attachments
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method ZCL_CONTENT_REPOSITORY->GET_DETAIL
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IV_OBJECT_ID                   TYPE        SAEOBJID
+* | [--->] IS_METADATA                    TYPE        TOAOM
+* | [--->] IS_CONNECTION                  TYPE        TOAV0
+* | [<-()] RS_DOCUMENT                    TYPE        TS_DOCUMENT
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+METHOD GET_DETAIL.
+
+  data:
+    lt_archiveobject type STANDARD TABLE OF DOCS WITH DEFAULT KEY,
+    lv_length      TYPE sapb-length VALUE '0',
+    lv_offset      TYPE sapb-offset VALUE '0'.
+
+  CLEAR rs_document.
+
+  rs_document-business_object = is_metadata-sap_object.
+  rs_document-file_type       = is_connection-reserve.
+  rs_document-object_id       = iv_object_id.
+  rs_document-arc_doc_id      = is_connection-arc_doc_id.
+
+*-- NOTE:  If you are getting the same length for all documents retrieved,
+*--        it is probably a web page with additional information.  When this
+*--        happened to me, it was because the ICC Connector to FileNet was setup
+*--        to use the Content Repository viewer instead of the SAP internal viewer.
+*--
+*--        This was done becauce the SAP internal viewer did not limit access to the
+*--        documents that could be viewed.  If you can view the PO, then you can view
+*--        the attachments.
+*--
+*--        As long as the ICC config is set up this way, it is not possible to donwload
+*--        or view attachments via the Fiori Approvals App.  The reason for this is that
+*--        FileNet is not available outside of the local network.
+*--
+*--        You can see what is being passed back by setting mode = 'T', and using a text table for ARVHIVOBJECT table
+*--
+  CALL FUNCTION 'ARCHIVOBJECT_GET_BYTES'
+    EXPORTING
+      archiv_id                = is_connection-archiv_id
+      archiv_doc_id            = is_connection-arc_doc_id
+      document_type            = is_connection-reserve(20)
+      length                   = lv_length
+      offset                   = lv_offset
+*     MODE                     = ' '
+*     SIGNATURE                = 'X'
+*     SHIFT_FLAG               = ' '
+*     COMPID                   = 'data'
+    IMPORTING
+      binlength                = rs_document-binlength
+*     LENGTH                   = LENGTH
+*     OFFSET                   = OFFSET
+    TABLES
+      binarchivobject          = rs_document-contents
+      ARCHIVOBJECT             = lt_archiveobject
+    EXCEPTIONS
+      error_archiv             = 1
+      error_communicationtable = 2
+      error_kernel             = 3
+      OTHERS                   = 4.
+
+  IF sy-subrc = 0.
+
+    get_document_file_info( EXPORTING
+                              iv_archive_doc_id  = is_connection-arc_doc_id
+                            IMPORTING
+                              ev_filename    = rs_document-filename
+                              ev_description = rs_document-description
+                          ).
+
+*--   If the attachment does not have a filename and description, it is not an ICC file,
+*--   so it is not needed in this list.
+    IF rs_document-filename IS INITIAL.
+
+      CLEAR rs_document.
+
+    ENDIF.
+
+*-- Check to see if the document is really an HTML web page from FileNet.  When SSO
+*-- is not set up (and possibly other conditions), FileNet redirects the user to a
+*-- web page to log in.  The method called above will then return the web page contents
+*-- when it cannot return the actual file
+    check_for_html_page( CHANGING cs_document = rs_document ).
+
+  ELSE.
+
+    CLEAR rs_document.
+
+  ENDIF.
+
+ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZCL_CONTENT_REPOSITORY->GET_DOCUMENTS_FOR_OBJECT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IV_OBJECT_ID                   TYPE        SAEOBJID
+* | [--->] IV_SAP_OBJECT                  TYPE        SAEANWDID
+* | [--->] IT_DOCUMENT_TYPES              TYPE        TT_DOCUMENT_TYPES(optional)
+* | [<-()] RT_DOCUMENTS                   TYPE        TT_DOCUMENTS
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_documents_for_object.
+
+    DATA:
+      lt_documents TYPE tt_documents,
+      lt_metadata  TYPE tt_metadata,
+      ls_metadata  LIKE LINE OF lt_metadata.
+
+    lt_metadata = get_metadata_for_sap_object(
+                                               iv_sap_object     = iv_sap_object
+                                               it_document_types = it_document_types
+                                             ).
+
+*-- For each possible entry, get the documents associated with the Business document (PO, etc)
+    LOOP AT lt_metadata INTO ls_metadata.
+
+*-- Use the defined Link Table
+      lt_documents = get_attachments(
+                                      iv_object_id = iv_object_id
+                                      is_metadata  = ls_metadata
+                                    ).
+
+      APPEND LINES OF lt_documents TO rt_documents.
+
+    ENDLOOP.
+
+  ENDMETHOD.                    "get_documents_for_object
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method ZCL_CONTENT_REPOSITORY->GET_DOCUMENT_FILE_INFO
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IV_ARCHIVE_DOC_ID              TYPE        TOAAT-ARC_DOC_ID
+* | [<---] EV_FILENAME                    TYPE        TOAAT-FILENAME
+* | [<---] EV_DESCRIPTION                 TYPE        TOAAT-DESCR
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_document_file_info.
+
+    CLEAR:
+      ev_filename,
+      ev_description.
+
+    SELECT SINGLE filename descr
+             INTO (ev_filename, ev_description)
+             FROM toaat
+            WHERE arc_doc_id  = iv_archive_doc_id.
+
+  ENDMETHOD.                    "get_document_file_info
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method ZCL_CONTENT_REPOSITORY->GET_METADATA_FOR_SAP_OBJECT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IV_SAP_OBJECT                  TYPE        SAEANWDID
+* | [--->] IT_DOCUMENT_TYPES              TYPE        TT_DOCUMENT_TYPES(optional)
+* | [<-()] RT_METADATA                    TYPE        TT_METADATA
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_metadata_for_sap_object.
+
+    CLEAR rt_metadata.
+
+    SELECT * FROM toaom
+           INTO TABLE rt_metadata
+           WHERE  sap_object  = iv_sap_object
+           AND    ar_object  IN it_document_types
+           AND    ar_status   = abap_true.
+
+  ENDMETHOD.                    "get_metadata_for_sap_object
+ENDCLASS.
