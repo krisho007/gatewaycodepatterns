@@ -19,6 +19,14 @@
     READ TABLE lt_keys INTO ls_key WITH KEY name = 'ORDERNUMBER'.
     CHECK sy-subrc EQ 0.
         
+*============Send Data back======================================================================================
+   copy_data_to_ref(
+      EXPORTING
+        is_data = laborentries_get_entity
+      CHANGING
+         cr_data = er_entity
+    ).
+        
 *============"Tell the framework that all required fecthing is done and not to do generic expand. ===============
     DATA: lo_request TYPE REF TO /iwbep/cl_mgw_request.
     lo_request ?= io_tech_request_context.
