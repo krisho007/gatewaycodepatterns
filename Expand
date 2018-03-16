@@ -7,7 +7,18 @@
            damagecodegroups  TYPE STANDARD TABLE OF zcl_zworkorder_mpc=>ts_damagecodegroup WITH DEFAULT KEY,
            notificationunits TYPE STANDARD TABLE OF zcl_zworkorder_mpc=>ts_unit WITH DEFAULT KEY.
     TYPES: END OF lty_s_workorder.
-
+    
+*=======Getting key for GET_EXPANDED_ENTITY======================================================================
+    DATA: lt_keys                 TYPE /iwbep/t_mgw_tech_pairs,
+          ls_key                  TYPE /iwbep/s_mgw_tech_pair,
+          lv_entity_name          TYPE /iwbep/mgw_tech_name.
+          
+*   Get entityset name
+    lv_entity_name = io_tech_request_context->get_entity_type_name( ).
+    lt_keys = io_tech_request_context->get_keys( ).
+    READ TABLE lt_keys INTO ls_key WITH KEY name = 'ORDERNUMBER'.
+    CHECK sy-subrc EQ 0.
+        
 *============"Tell the framework that all required fecthing is done and not to do generic expand. ===============
     DATA: lo_request TYPE REF TO /iwbep/cl_mgw_request.
     lo_request ?= io_tech_request_context.
