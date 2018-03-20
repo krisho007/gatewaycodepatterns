@@ -1,8 +1,5 @@
   METHOD /iwbep/if_mgw_appl_srv_runtime~create_deep_entity.
 
-    CONSTANTS: lc_soitems TYPE string VALUE 'SOItems'.
-    DATA: lv_compare_result TYPE /iwbep/if_mgw_odata_expand=>ty_e_compare_result.
-
 * Type declaration for header and navigation items
     TYPES: BEGIN OF lty_s_workorder.
             INCLUDE TYPE zcl_zworkorder_mpc=>ts_workorderdetail.
@@ -13,10 +10,8 @@
     DATA: ls_workorder TYPE lty_s_workorder.
 
 * Validate whether the current request including the inline SOItem data matches
-    lv_compare_result = io_expand->compare_to( lc_soitems ).
-
 * Upon match, access data from IO_DATA_PROVIDER
-    IF lv_compare_result EQ /iwbep/if_mgw_odata_expand=>gcs_compare_result-match_equals.
+    IF io_expand->compare_to_tech_names('SALESAREAS') = /iwbep/if_mgw_odata_expand=>gcs_compare_result-match_equals.
       io_data_provider->read_entry_data( IMPORTING es_data = ls_workorder ).
     ENDIF.
 
