@@ -1,0 +1,41 @@
+  METHOD quotarecords_get_entityset.
+
+    FIELD-SYMBOLS <lt_pay_data> TYPE ANY TABLE.
+    DATA: lr_pay_data      TYPE REF TO data,
+          ls_report_output TYPE ty_vacation_report_line,
+          ls_output        TYPE zcl_zvacation_report_mpc=>ts_quotarecord.
+
+    cl_salv_bs_runtime_info=>set( EXPORTING display  = abap_false
+                                            metadata = abap_false
+                                            data     = abap_true ).
+
+    SUBMIT zhr_vacation_report AND RETURN. 
+    "<<<<<<<zhr_vacation_report>>>>>> is name of the ALV report returning program
+    
+    TRY.
+        cl_salv_bs_runtime_info=>get_data_ref( IMPORTING r_data = lr_pay_data ).
+        ASSIGN lr_pay_data->* TO <lt_pay_data>.
+      CATCH cx_salv_bs_sc_runtime_info.
+        
+    ENDTRY.
+
+    cl_salv_bs_runtime_info=>clear_all( ).
+
+    FIELD-SYMBOLS:
+      <lt_itab>       TYPE table.
+    ASSIGN lr_pay_data->* TO <lt_itab>.
+
+    LOOP AT <lt_itab> INTO ls_report_output.
+      ls_output-personnelnumber = ls_report_output-pernr.
+      ls_output-quota = ls_report_output-ktart.
+      ls_output-quotaname = ls_report_output-kttext.
+      ls_output-name = ls_report_output-cname.
+      ls_output-entitlement = ls_report_output-entitle.
+      ls_output-used = ls_report_output-reduced.
+      ls_output-compensated = ls_report_output-reduced2.
+      ls_output-remaining = ls_report_output-rest.
+      ls_output-unit = ls_report_output-untext.
+      APPEND ls_output TO et_entityset.
+    ENDLOOP.
+
+  ENDMETHOD.
