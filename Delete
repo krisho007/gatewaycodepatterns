@@ -1,14 +1,7 @@
-    DATA: lt_keys            TYPE /iwbep/t_mgw_tech_pairs,
-          ls_key             TYPE LINE OF /iwbep/t_mgw_tech_pairs,
-          lv_tu_number       TYPE /scwm/de_tu_num,
-          lv_activity_number TYPE /scwm/de_tu_sr_act_num.
+  DATA: ls_entity TYPE <entity type data type using MPC class>
 
-    "Keys to be deleted
-    lt_keys = io_tech_request_context->get_keys( ).
-    READ TABLE lt_keys INTO ls_key WITH KEY name = 'TU_NUM'.
-    IF sy-subrc EQ 0.
-      lv_tu_number = ls_key-value.
-    ENDIF.
-
-    "Both should be supplied.
-    CHECK lv_activity_number IS NOT INITIAL AND lv_tu_number IS NOT INITIAL.
+  " Get Converted keys
+  io_tech_request->get_converted_keys( IMPORTING es_key_values = ls_entity ).    
+    
+    "key should be checked
+    CHECK ls_entity-key1 IS NOT INITIAL AND ls_entity-key2 IS NOT INITIAL.
