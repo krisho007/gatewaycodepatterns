@@ -43,4 +43,14 @@ define view ZWM_SCORE_VH as select from zwm_valuehelps {
     DATA(lo_text_anno) = lo_txt_property->/iwbep/if_mgw_odata_annotatabl~create_annotation( 'sap' ).
     lo_text_anno->add( iv_key = 'text' iv_value = 'Text').
 
+    "Show Calendar as value help
+    lo_txt_property = model->get_entity_type( 'ZWM_FINDINGS_CType' )->get_property( 'InspectionDate' ).
+    lo_text_anno = lo_txt_property->/iwbep/if_mgw_odata_annotatabl~create_annotation( 'sap' ).
+    lo_text_anno->add( iv_key = 'display-format' iv_value = 'Date').
+
+    "Show Date Range in Value Help
+    lo_txt_property = model->get_entity_type( 'ZWM_FINDINGS_CType' )->get_property( 'InspectionDate' ).
+    lo_text_anno = lo_txt_property->/iwbep/if_mgw_odata_annotatabl~create_annotation( 'sap' ).
+    lo_text_anno->add( iv_key = 'filter-restriction' iv_value = 'interval').
+    
   ENDMETHOD. "Remember that this class gets overwritten everytime you activate the CDS view
