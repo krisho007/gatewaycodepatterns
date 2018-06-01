@@ -1,0 +1,46 @@
+**************************Start : Main CDS View*************************************
+@AbapCatalog.sqlViewName: 'ZWM_VFINDINGS_C'
+@AbapCatalog.compiler.compareFilter: true
+@AccessControl.authorizationCheck: #CHECK
+@EndUserText.label: 'Findings View'
+@Search.searchable: true
+@OData.publish: true
+define view ZWM_FINDINGS_C as select from zwm_findings 
+association [0..1] to ZWM_SCORE_VH as _scoreVH on $projection.ScoreId = _scoreVH.id
+{
+....
+....
+    @Consumption.valueHelp: '_scoreVH'  
+        score as ScoreId, 
+        _scoreVH
+}
+
+**************************End : Main CDS View*************************************
+
+**************************Start: Value Help CDS View***************************************
+  @AbapCatalog.sqlViewName: 'ZWM_VSCORE_VH'
+@AbapCatalog.compiler.compareFilter: true
+@AccessControl.authorizationCheck: #CHECK
+@EndUserText.label: 'Value Help for Score'
+define view ZWM_SCORE_VH as select from zwm_valuehelps {
+    @EndUserText.label: 'Id'
+    key object_key as id,
+    @EndUserText.label: 'Score'
+    text as Text
+} where dropdown_id = '02'
+**************************End: Value Help CDS View***************************************
+
+  METHOD define. "Generated Class Name is ZCL_<CDS View Name>
+
+    super->define( ).
+
+    "Set the Property as having 'Fixed Values' (This will provide Dropdown Option)
+    DATA(lo_txt_property) = model->get_entity_type( 'ZWM_FINDINGS_CType' )->get_property( 'ScoreId' ).
+    lo_txt_property->set_value_list( /iwbep/if_mgw_odata_property=>gcs_value_list_type_property-fixed_values ).
+
+    "Within the ValueHelp Entity, inform that property 'Text' is the rext of key 'Id'. (Within the Dropdown, this will show both ID and Text)
+    lo_txt_property = model->get_entity_type( 'ZWM_SCORE_VHType' )->get_property( 'Id' ).
+    DATA(lo_text_anno) = lo_txt_property->/iwbep/if_mgw_odata_annotatabl~create_annotation( 'sap' ).
+    lo_text_anno->add( iv_key = 'text' iv_value = 'Text').
+
+  ENDMETHOD. "Remember that this class gets overwritten everytime you activate the CDS view
