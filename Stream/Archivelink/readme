@@ -1,4 +1,4 @@
-Class ZCL_CONTENT_REPOSITORY will fetch BOTH GOS and ARCHIVELINK attachments.
+Class ZCL_CONTENT_REPOSITORY will fetch BOTH GOS and ARCHIVELINK attachments. Most of this content is from SAP provided class for PR Fiori app.
 
 Method GET_DOCUMENTS_FOR_OBJECT provides a list of attachments for a Business Object
 Method ENHANCE_ATTACHMENT_CONTENT provides content of the attachment.
