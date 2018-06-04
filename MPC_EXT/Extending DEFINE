@@ -1,3 +1,4 @@
+" Extendinf DEFINE and adding SAP Annotations
 METHOD define.
 
     DATA: lo_entity_type TYPE REF TO /iwbep/if_mgw_odata_entity_typ,
