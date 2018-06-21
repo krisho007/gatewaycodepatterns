@@ -119,6 +119,12 @@
       es_attachment-filesize = ls_doc_info-doc_size.
       es_attachment-filedescription = ls_doc_info-obj_descr.
 
+      copy_data_to_ref(
+        EXPORTING
+          is_data = es_attachment
+        CHANGING
+          cr_data = er_entity ).    
+          
     ELSE.
       "Raise exception
       RAISE EXCEPTION TYPE /iwbep/cx_mgw_busi_exception
