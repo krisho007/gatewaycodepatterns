@@ -10,6 +10,14 @@
           lt_header       TYPE STANDARD TABLE OF soli,
           lv_filename     TYPE string. "file name and ext
 
+    DATA: lv_entity_name TYPE /iwbep/mgw_tech_name,
+          ls_attachemnt  TYPE <MPC_EXT>=>ts_attachment,
+          ls_key_tab     TYPE  <MPC_EXT>=>ts_attachment.
+
+    lv_entity_name = io_tech_request_context->get_entity_type_name( ).
+    // Business document key
+    io_tech_request_context->get_converted_source_keys( IMPORTING es_key_values = ls_key_tab ).
+
     " The temporary location of the document to be uploaded
     CALL FUNCTION 'SO_FOLDER_ROOT_ID_GET'
       EXPORTING
@@ -81,7 +89,7 @@
       "associated with the Bsuiness object right away.
 
       "Associate the uploaded file to the PR
-      ls_object-objkey = iv_doc_number.
+      ls_object-objkey = ls_key_tab-doc_number.
       ls_object-objtype = 'BUS2105'.  "Purchase Requisition
 
       ls_document-objtype = 'MESSAGE'.
@@ -98,7 +106,7 @@
           unknown        = 3
           OTHERS         = 4.
 
-      es_attachment-prnumber = iv_doc_number.
+      es_attachment-prnumber = ls_key_tab-doc_number.
       es_attachment-id = ls_doc_info-doc_id.
       es_attachment-createdby = ls_doc_info-creat_name.
       es_attachment-createdbyname = ls_doc_info-creat_fnam.
