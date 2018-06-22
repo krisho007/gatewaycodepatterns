@@ -1,0 +1,70 @@
+    DATA: lv_entity_name TYPE /iwbep/mgw_tech_name,
+          ls_key_tab     TYPE /iwbep/s_mgw_tech_pair,
+          lt_key_tab     TYPE /iwbep/t_mgw_tech_pairs,
+          ls_header      TYPE ihttpnvp,
+          lv_finding_id  TYPE zwm_finding,
+          ls_stream      TYPE /iwbep/if_mgw_core_srv_runtime=>ty_s_media_resource,
+          lv_atta_key    TYPE gos_atta_id,
+          lv_file_name   TYPE bitm_filename.
+
+    lv_entity_name = io_tech_request_context->get_entity_type_name( ).
+    lt_key_tab = io_tech_request_context->get_keys( ).
+    READ TABLE lt_key_tab INTO ls_key_tab WITH KEY name = 'FINDINGID'.
+    IF sy-subrc EQ 0.
+      lv_finding_id = ls_key_tab-value.
+    ENDIF.
+    READ TABLE lt_key_tab INTO ls_key_tab WITH KEY name = 'ID'.
+    IF sy-subrc EQ 0.
+      lv_atta_key = ls_key_tab-value.
+    ENDIF.
+        
+    DATA: lo_gos_api     TYPE REF TO cl_gos_api,
+          ls_appl_object TYPE gos_s_obj,
+          ls_atta_key    TYPE gos_s_attkey,
+          ls_content     TYPE gos_s_attcont.
+
+    ls_atta_key-atta_id = lv_atta_key.
+    ls_atta_key-atta_cat = 'MSG'.
+
+    ls_appl_object-typeid = 'CL_SQRMBWA'.
+    ls_appl_object-catid  = 'BC'.
+
+    "Instantiate GOS
+    ls_appl_object-instid = lv_finding_id.
+    TRY.
+        lo_gos_api = cl_gos_api=>create_instance( ls_appl_object ).
+
+        "Get Attachment Content
+        CALL METHOD lo_gos_api->get_al_item
+          EXPORTING
+            is_atta_key = ls_atta_key
+          RECEIVING
+            rs_attcont  = ls_content.
+
+        "Attachment Content
+        ls_stream-value = ls_content-content_x.
+
+        "Calculate mime-type
+        DATA: lv_mime_type TYPE w3conttype.
+        CALL FUNCTION 'SDOK_MIMETYPE_GET'
+          EXPORTING
+            extension = ls_content-tech_type
+          IMPORTING
+            mimetype  = lv_mime_type.
+            
+        ls_stream-mime_type = lv_mime_type.
+        lv_file_name = ls_content-filename.
+
+      CATCH cx_gos_api.
+*   error handling
+    ENDTRY.        
+        
+    copy_data_to_ref( EXPORTING is_data = ls_stream
+                      CHANGING  cr_data = er_stream ).
+
+* +++++++++++++++++++++++++++++++++++
+    " Download or Preview the pdf ?
+*+++++++++++++++++++++++++++++++++++
+    ls_header-name = 'Content-Disposition'.
+    ls_header-value = |outline; filename="{ lv_file_name }";'|.  "download
+    set_header( is_header = ls_header ).
