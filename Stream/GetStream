@@ -1,4 +1,21 @@
+    TYPES:
+      BEGIN OF ty_s_media_resource.
+            INCLUDE TYPE /iwbep/if_mgw_core_srv_runtime=>ty_s_media_resource.
+    TYPES:
+      END OF ty_s_media_resource .
 
+    DATA: lv_entity_name TYPE /iwbep/mgw_tech_name,
+          ls_key_tab     TYPE /iwbep/s_mgw_tech_pair,
+          lt_key_tab     TYPE /iwbep/t_mgw_tech_pairs,
+          ls_stream      TYPE ty_s_media_resource,
+          ls_obj_hd      TYPE sood2,
+          lt_objhead     TYPE STANDARD TABLE OF soli,
+          ls_objhead     TYPE soli,          
+          ls_header      TYPE ihttpnvp.
+
+    lv_entity_name = io_tech_request_context->get_entity_type_name( ).
+    lt_key_tab = io_tech_request_context->get_keys( ).
+    
 *-----------------------------
 Reading GOS attachemnt details
 *-----------------------------
@@ -64,8 +81,11 @@ Reading GOS attachemnt details
     EXPORTING
       folder_id                  = l_folder_id
       object_id                  = l_object_id
+    IMPORTING
+      object_hd_display          = ls_obj_hd      
     TABLES
       objcont                    = document_content
+      objhead                    = lt_objhead      
     EXCEPTIONS
       active_user_not_exist      = 1
       communication_failure      = 2
@@ -86,6 +106,55 @@ Reading GOS attachemnt details
     MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
             WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
   ENDIF.
+
+   -----------------------------------------------------------------
+*   build ev_mime_type and ev_file_name
+*   -----------------------------------------------------------------
+    LOOP AT lt_objhead INTO ls_objhead
+               WHERE table_line CP '&SO_FILENAME=*'.
+      SPLIT ls_objhead AT '.' INTO TABLE lt_split.
+      IF sy-subrc IS INITIAL..
+        lv_lines = lines( lt_split ).
+        IF lv_lines <> 0.
+          READ TABLE lt_split INTO ls_extension INDEX lv_lines.
+          lv_extension = ls_extension.
+          IF lv_extension <> ls_obj_hd-file_ext.
+            SELECT SINGLE type INTO lv_mime_type FROM sdokmime_c
+                   WHERE extension = lv_extension.
+            IF sy-subrc <> 0.
+              SELECT SINGLE type INTO lv_mime_type FROM sdokmime
+                   WHERE extension = lv_extension.
+            ENDIF.
+          ENDIF.
+        ENDIF.
+      ENDIF.
+      CLEAR: lt_split.
+      SPLIT ls_objhead AT '=' INTO TABLE lt_split.
+      lv_lines = lines( lt_split ).
+      IF lv_lines <> 0.
+        READ TABLE lt_split INTO ls_filename INDEX lv_lines.
+        lv_file_name = ls_filename.
+      ENDIF.
+      EXIT.
+    ENDLOOP.
+
+    IF lv_file_name IS INITIAL.
+      CONCATENATE ls_obj_hd-objdes ls_obj_hd-file_ext INTO lv_file_name SEPARATED BY '.'.
+    ENDIF.
+
+*     common processing, calculate mime-type
+    CALL FUNCTION 'SDOK_MIMETYPE_GET'
+      EXPORTING
+        extension = ls_doc_data-obj_type
+      IMPORTING
+        mimetype  = lv_mime_type.
+
+    
+    ls_stream-mime_type = lv_mime_type.
+    ls_stream-value = lv_stream.
+
+    copy_data_to_ref( EXPORTING is_data = ls_stream
+                  CHANGING  cr_data = er_stream ).
 
  +++++++++++++++++++++++++++++++++++
  " Download or Preview the pdf ?
