@@ -1,0 +1,32 @@
+    DATA: lo_gos_api         TYPE REF TO cl_gos_api,
+          ls_appl_object     TYPE gos_s_obj,
+          lt_attachment_list TYPE gos_t_atta,
+          lt_role_filter     TYPE gos_t_rol,
+          ls_attachment      TYPE gos_s_atta,
+          ls_finding_atta    TYPE zcl_zsqrmbwa_mpc_ext=>ts_attachment.
+
+    ls_appl_object-typeid = 'CL_XYZ'. "Class or BO Name
+    ls_appl_object-catid  = 'BC'. "BO for SW01 BO
+
+    "Instantiate GOS
+    ls_appl_object-instid = iv_finding_id.
+    TRY.
+        lo_gos_api = cl_gos_api=>create_instance( ls_appl_object ).
+        APPEND cl_gos_api=>c_attachment TO lt_role_filter.
+        lt_attachment_list = lo_gos_api->get_atta_list( lt_role_filter ).
+      CATCH cx_gos_api.
+*   error handling
+    ENDTRY.
+    
+    LOOP AT lt_attachment_list INTO ls_attachment.
+      ls_finding_atta-findingid = iv_finding_id.
+      ls_finding_atta-id = ls_attachment-atta_id.
+      ls_finding_atta-filename = ls_attachment-filename.
+      ls_finding_atta-filedescription = ls_attachment-descr.
+      ls_finding_atta-createdby = ls_attachment-cr_user.
+      ls_finding_atta-createdbyname = ls_attachment-cr_name.
+      ls_finding_atta-filesize = ls_attachment-filesize.
+      ls_finding_atta-mime_type = ls_attachment-tech_type.
+      ls_finding_atta-createdat = | { ls_attachment-cr_date }{ ls_attachment-cr_time } |.
+      APPEND ls_finding_atta TO et_attachment_list.
+    ENDLOOP.
