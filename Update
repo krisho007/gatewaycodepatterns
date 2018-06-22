@@ -1,4 +1,10 @@
 
-* Read request data
-    DATA:  ls_request_input_data TYPE <EntityType declared in MPC>.
+    DATA: ls_request_input_data TYPE zcl_zsqrmbwa_mpc_ext=>ts_finding,
+          lv_finding_id         TYPE zwm_finding.
+
+    " Get Converted keys
+    io_tech_request_context->get_converted_keys( IMPORTING es_key_values = ls_request_input_data ).
+    lv_finding_id = ls_request_input_data-findingid.
+
+    "Get Request Data
     io_data_provider->read_entry_data( IMPORTING es_data = ls_request_input_data ).
