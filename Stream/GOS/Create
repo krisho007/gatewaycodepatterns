@@ -1,0 +1,60 @@
+    DATA: lv_entity_name TYPE /iwbep/mgw_tech_name,
+          ls_attachemnt  TYPE zcl_zsqrmbwa_mpc_ext=>ts_attachment,
+          ls_key_tab     TYPE zcl_zsqrmbwa_mpc_ext=>ts_attachment.
+
+    lv_entity_name = io_tech_request_context->get_entity_type_name( ).
+    io_tech_request_context->get_converted_source_keys( IMPORTING es_key_values = ls_key_tab ).
+    
+    DATA: lo_gos_api       TYPE REF TO cl_gos_api,
+          lt_role_filter   TYPE gos_t_rol,
+          ls_attcont       TYPE gos_s_attcont,
+          lv_commit        TYPE flag,
+          ls_appl_object   TYPE gos_s_obj,
+          lx_gos_exception TYPE REF TO cx_gos_api.
+
+    FIELD-SYMBOLS: <fs_deep_finding> TYPE zcl_zsqrmbwa_dpc_ext=>ty_deep_finding.
+
+*   Get file name and extension
+    CALL METHOD cl_bcs_utilities=>split_name
+      EXPORTING
+        iv_name      = iv_slug  "iv_slug should have complete file name with extension. Ex:samplefile.docx
+        iv_delimiter = '.'
+      IMPORTING
+        ev_extension = ls_attcont-tech_type.
+
+    ls_appl_object-typeid = 'CL_ABC'. "Class Name or BO Name
+    ls_appl_object-catid  = 'BC'.  "BC for Class, BO for SW01 BOs
+    ls_appl_object-instid = ls_key_tab-finding_id.
+
+    "Instantiate GOS
+    ls_appl_object-instid = iv_finding_id.
+    ls_attcont-atta_cat =  cl_gos_api=>c_msg.
+    ls_attcont-content_x = is_media_resource-value.
+    ls_attcont-filename = iv_slug.
+
+    TRY.
+        lo_gos_api = cl_gos_api=>create_instance( ls_appl_object ).
+        lo_gos_api->insert_al_item(
+                  EXPORTING
+                    is_attcont =  ls_attcont
+                    iv_roltype =  cl_gos_api=>c_attachment
+              RECEIVING
+                rv_commit  = lv_commit
+                ).
+
+      CATCH cx_gos_api INTO lx_gos_exception.
+*   error handling
+        data: lv_error TYPE string.
+        lv_error = lx_gos_exception->get_text( ).
+        lv_error = lx_gos_exception->get_longtext( ).
+    ENDTRY.
+
+IF lv_commit eq abap_true.
+    COMMIT WORK.        
+ENDIF.
+
+    copy_data_to_ref(
+      EXPORTING
+        is_data = ls_attachemnt
+      CHANGING
+        cr_data = er_entity ).
