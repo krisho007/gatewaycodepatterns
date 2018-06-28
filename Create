@@ -1,5 +1,24 @@
 
+*   Get Source Keys. If query is through Navigation
+    DATA: lt_parent_keys TYPE /iwbep/t_mgw_tech_pairs,
+          ls_parent_key  TYPE /iwbep/s_mgw_tech_pair.
 
+    "Get Parent entity name
+    IF io_tech_request_context->get_source_entity_type_name( ) = 'Inspection'.
+      "get parent keys
+      lt_parent_keys = io_tech_request_context->get_source_keys( ).
+      READ TABLE lt_parent_keys INTO ls_parent_key WITH KEY name = 'INSPECTIONID'.
+      IF sy-subrc EQ 0.
+        er_entity-inspectionid = ls_parent_key-value.
+      ENDIF.
+      
+      "Get Converted Parent Keys
+     IF io_tech_request_context->get_source_entity_type_name( ) = 'Inspection'.
+      "get parent keys
+      io_tech_request_context->get_converted_source_keys( IMPORTING es_key_values = <parent_entity_structure> ).
+      er_entity-inspectionid = <parent_entity_structure>-inspectionid.
+     ENDIF.      
+    ENDIF.
 
 * Read request data
     DATA:  ls_request_input_data TYPE <EntityType declared in MPC>.
