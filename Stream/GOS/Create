@@ -31,6 +31,7 @@
     ls_attcont-atta_cat =  cl_gos_api=>c_msg.
     ls_attcont-content_x = is_media_resource-value.
     ls_attcont-filename = iv_slug.
+    ls_attcont-filesize = xstrlen( iv_data ).  "Very important. Without this XLSX and DOCX will have issues when downloaded
 
     TRY.
         lo_gos_api = cl_gos_api=>create_instance( ls_appl_object ).
