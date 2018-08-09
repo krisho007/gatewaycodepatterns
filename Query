@@ -29,6 +29,10 @@
     ENDIF.
   ENDIF.
 
+*Get Converted Source Keys
+ DATA: ls_ls_<source_entity_type> TYPE zcl_zsqrmbwa_mpc=>ts_<source_entity_type>.
+ io_tech_request_context->get_converted_source_keys( IMPORTING es_key_values = ls_<source_entity_type> ).
+
 *Get Open search string
   DATA: lv_search_string  TYPE string,
         ltr_vendor_name   TYPE RANGE OF name1_gp,
