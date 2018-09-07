@@ -74,7 +74,7 @@
     IF lt_order IS NOT INITIAL.
       LOOP AT lt_order INTO ls_order.
         ls_otab-name = ls_order-property.
-        IF ls_order-order = lcs_sorting_order-descending.
+        IF ls_order-order = 'desc'.
           ls_otab-descending = abap_true.
         ELSE.
           ls_otab-descending = abap_false.
