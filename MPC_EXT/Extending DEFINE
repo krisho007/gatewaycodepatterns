@@ -10,6 +10,7 @@ METHOD define.
     lo_entity_type = model->get_entity_type( iv_entity_name = 'SESItem'). "Your Entity Name
 
     lo_property ?= lo_entity_type->get_property( iv_property_name = 'Date'). "Property inside your Entity
+    lr_property->SET_INTERNAL_TYPE( cl_abap_typedescr=>TYPEKIND_STRING ). "Depending on your data type
 
     CALL METHOD lo_property->/iwbep/if_mgw_odata_annotatabl~create_annotation
       EXPORTING
