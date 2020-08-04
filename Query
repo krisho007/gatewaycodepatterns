@@ -12,6 +12,14 @@
       lv_plant = ls_select_option-low.
     ENDIF.
 
+* Get $Select
+  DATA: lt_select_table TYPE string_table,
+  lv_property_selected type string.
+  lt_select_table = io_tech_request_context->get_select( ).
+  LOOP AT lt_select_table INTO DATA(lv_select).
+    lv_property_selected = | { lv_property_selected } { lv_select }|.
+  ENDLOOP.
+
 *Get Open SQL WHERE Clause from $filter
   DATA: lv_osql_where_clause TYPE string. 
   lv_osql_where_clause = io_tech_request_context->get_osql_where_clause( ).
