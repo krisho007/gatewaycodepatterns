@@ -1,0 +1,62 @@
+# This method checks the input (structure or table) 
+
+# Method Interface
+IM_DATA	TYPE ANY	
+IV_TYPE	TYPE TABNAME	Table Name
+/IWBEP/CX_MGW_BUSI_EXCEPTION		Business Exception
+
+# Code
+  METHOD validate_inbuilt_checks.
+
+    DATA: lt_failure      TYPE STANDARD TABLE OF ddfkeyrc,
+          lt_error        TYPE tb_fw_error,
+          lv_all_messages TYPE string.
+    FIELD-SYMBOLS: <fs_table>     TYPE ANY TABLE,
+                   <fs_structure> TYPE any.
+
+    DESCRIBE FIELD im_data TYPE DATA(lv_typ).
+    IF lv_typ EQ 'h'.
+      ASSIGN im_data TO <fs_table>.
+      LOOP AT <fs_table> ASSIGNING <fs_structure>.
+        "Validate forign key checks
+        CALL FUNCTION 'DDUT_INPUT_CHECK'
+          EXPORTING
+            tabname     = iv_type
+            fieldname   = '*'
+            value_list  = <fs_structure>
+          TABLES
+            failure_tab = lt_failure.
+      ENDLOOP.
+    ELSE.
+      "Validate forign key checks
+      CALL FUNCTION 'DDUT_INPUT_CHECK'
+        EXPORTING
+          tabname     = iv_type
+          fieldname   = '*'
+          value_list  = im_data
+        TABLES
+          failure_tab = lt_failure.
+    ENDIF.
+
+    IF lines( lt_failure ) GT 0.
+      LOOP AT lt_failure ASSIGNING FIELD-SYMBOL(<ddfkeyrc>).
+        DATA(lv_msgno) = <ddfkeyrc>-msgnr.
+        MESSAGE ID <ddfkeyrc>-arbgb TYPE 'E' NUMBER lv_msgno
+        INTO DATA(lv_message)
+          WITH <ddfkeyrc>-msgv1 <ddfkeyrc>-msgv2
+               <ddfkeyrc>-msgv3 <ddfkeyrc>-msgv4.
+        lv_all_messages = |{ lv_all_messages } - { lv_message }|.
+      ENDLOOP.
+    ENDIF.
+
+    MESSAGE e022(zmm_wup_messages) INTO lv_message.
+    lv_all_messages = |{ lv_all_messages } { lv_message }|.
+
+    IF lv_all_messages IS NOT INITIAL.
+      RAISE EXCEPTION TYPE /iwbep/cx_mgw_busi_exception
+        EXPORTING
+          textid            = /iwbep/cx_mgw_busi_exception=>business_error_unlimited
+          message_unlimited = lv_all_messages.
+    ENDIF.
+
+  ENDMETHOD.
