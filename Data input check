@@ -47,10 +47,9 @@ IV_TYPE	TYPE TABNAME	Table Name
                <ddfkeyrc>-msgv3 <ddfkeyrc>-msgv4.
         lv_all_messages = |{ lv_all_messages } - { lv_message }|.
       ENDLOOP.
+      MESSAGE e022(zmm_wup_messages) INTO lv_message.
+      lv_all_messages = |{ lv_all_messages } { lv_message }|.
     ENDIF.
-
-    MESSAGE e022(zmm_wup_messages) INTO lv_message.
-    lv_all_messages = |{ lv_all_messages } { lv_message }|.
 
     IF lv_all_messages IS NOT INITIAL.
       RAISE EXCEPTION TYPE /iwbep/cx_mgw_busi_exception
