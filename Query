@@ -91,3 +91,11 @@
       ENDLOOP.
       SORT et_entityset BY (lt_otab).
     ENDIF.
+    
+* Inline count
+    IF io_tech_request_context->has_inlinecount( ) = abap_true.
+      SELECT COUNT(*) FROM zacts_v WHERE (lv_where_clause).
+      es_response_context-inlinecount = sy-dbcnt.
+    ELSE.
+      CLEAR es_response_context-inlinecount.
+    ENDIF.
