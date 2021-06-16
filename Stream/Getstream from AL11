@@ -1,0 +1,44 @@
+    DATA: l_attachmentguid TYPE zdeemt_att_guid,
+          lv_buffer TYPE xstring,
+          ls_stream        TYPE ty_s_media_resource,
+          ls_lheader       TYPE ihttpnvp.
+
+
+    READ TABLE it_key_tab INTO DATA(ls_key) WITH KEY name = 'AttachmentId'.
+    IF sy-subrc = 0.
+      l_attachmentguid = ls_key-value .
+    ENDIF.
+    
+    //Your logic to prepare the AL11 URL into variable lv_file_path
+
+    OPEN DATASET lv_file_path FOR INPUT IN BINARY MODE.
+
+    IF sy-subrc = 0.
+      DO .
+        READ DATASET lv_file_path INTO lv_buffer.
+        IF sy-subrc = 0.
+          CONCATENATE es_stream-value lv_buffer INTO es_stream-value IN BYTE MODE.
+        ELSE.
+          EXIT.
+        ENDIF.
+      ENDDO.
+    ELSE.
+    
+      " Failed to open the file for reading
+      MESSAGE e079(z_message) INTO DATA(lv_message).
+      RAISE EXCEPTION TYPE /iwbep/cx_mgw_busi_exception
+        EXPORTING
+          textid            = /iwbep/cx_mgw_busi_exception=>business_error_unlimited
+          message_unlimited = lv_message.
+    ENDIF.
+
+    CLOSE DATASET lv_file_with_key.
+    
+    //Your logic to prepare the filename into variable lv_filename
+    
+    ls_lheader-name = 'Content-Disposition'.
+    ls_lheader-value = 'outline; filename="' && lv_filename && '";'.
+    
+    set_header( is_header = ls_lheader ).
+    copy_data_to_ref( EXPORTING is_data = ls_stream
+                       CHANGING cr_data = er_stream ).
