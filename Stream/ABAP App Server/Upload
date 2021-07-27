@@ -1,0 +1,197 @@
+  METHOD add_attachment.
+*"----------------------------------------------------------------------
+* Ticket#     Name     Date     Description
+* INC0683404  guptani  06/16/21 Add Attachments to Esc Supply
+*"----------------------------------------------------------------------
+    TYPES : BEGIN OF ty_binary,
+              line TYPE so_text255,
+            END OF ty_binary.
+
+    DATA: l_dir             TYPE btch0000-text80,
+          ls_attachments    TYPE zemt_attachments,
+          p_file(128),
+          lv_binary_size    TYPE i,
+          lv_doc_size       TYPE i,
+          lt_binary_content TYPE STANDARD TABLE OF ty_binary,
+          wl_binary_content TYPE  ty_binary,
+          lv_filename       TYPE string,
+          lv_internal       TYPE string,
+          lv_categoryid     TYPE string,
+          gv_add_par        TYPE sxpgcolist-parameters,
+          ls_return         TYPE bapiret2.
+
+    "Update escalations only when it is not cancelled or closed
+    esc_update_not_allowed( ).
+
+    "Inserting Metadata
+    TRY.
+        DATA(lv_attach_id) = NEW cl_system_uuid( )->if_system_uuid~create_uuid_c32( ).
+      CATCH cx_uuid_error INTO DATA(lx_exception).
+    ENDTRY.
+    ls_attach-attachmentid  = ls_attachments-attachment_guid = lv_attach_id.
+    ls_attach-supplyid = ls_attachments-esc_sup_id =  mv_esc_supply_id.
+    ls_attachments-createdby = sy-uname.
+
+    ls_attachments-createdtimestamp = mv_timestamp.
+
+    ls_attachments-mandt = sy-mandt.
+
+    "Inserting Metadata for EMT
+    IF  iv_sup_portal_username IS NOT SUPPLIED AND iv_sup_con_name IS NOT SUPPLIED.
+      SPLIT iv_slug AT '|' INTO lv_filename lv_internal lv_categoryid.
+      ls_attach-filename = ls_attachments-file_name = lv_filename.
+      ls_attach-internal = ls_attachments-internal = lv_internal.
+      ls_attach-categoryid = ls_attachments-category = lv_categoryid.
+      ls_attach-uploadedbyid = ls_attachments-createdby = sy-uname.
+      ls_attachments-supplier_authored = ' '.
+      ls_attachments-file_key = mv_timestamp.
+      SELECT SINGLE username  FROM zcv_emt_req INTO ls_attach-uploadedby WHERE userid = sy-uname.
+
+      ls_attach-uploadedon = ls_attachments-createdtimestamp .
+      "Inserting Metadata for Supplier
+    ELSE.
+      ls_attachments-file_name = iv_slug.
+      ls_attachments-supplier_name = iv_sup_con_name.
+      ls_attachments-supplier_technical_id = iv_sup_portal_username.
+      ls_attachments-file_key = iv_file_key.
+      ls_attachments-supplier_authored = abap_true.
+      ls_attachments-category = iv_category.
+    ENDIF.
+    "Handling internal flag for supplier portal and emt tool
+    ls_attachments-internal = lv_internal.
+
+    "External comments by LAM are allowed only if the escalation was ever sent to Supplier earlier
+    IF lv_internal = ''.
+      check_ext_com_att_allowed(  ).
+    ENDIF.
+
+    IF is_media_resource-value IS NOT INITIAL.
+
+      CALL FUNCTION 'SCMS_XSTRING_TO_BINARY'
+        EXPORTING
+          buffer        = is_media_resource-value
+        IMPORTING
+          output_length = lv_binary_size
+        TABLES
+          binary_tab    = lt_binary_content.
+
+      lv_doc_size = lv_binary_size.
+      ls_attachments-file_size = lv_binary_size.
+
+    ENDIF.
+
+    " Add to attachment metadata table
+    INSERT zemt_attachments FROM ls_attachments.
+    IF sy-subrc IS NOT INITIAL.
+      MESSAGE e005(zemt_supp_message) INTO ls_return-message.
+      ls_return-type = 'E'.
+      ls_return-field = '03'.
+      APPEND ls_return TO et_return.
+      EXIT.
+    ELSE.
+      ev_attach_key = lv_attach_id.
+    ENDIF.
+
+    "Uploading File for EMT
+    IF  iv_sup_portal_username IS NOT SUPPLIED AND iv_sup_con_name IS NOT SUPPLIED.
+      SELECT SINGLE * FROM
+      tvarvc INTO @DATA(ls_param)
+      WHERE name = 'ZEMT_FILE_LOC'.
+      IF sy-subrc IS NOT INITIAL.
+        MESSAGE e008(zemt_supp_message) INTO ls_return-message.
+        ls_return-type = 'E'.
+        APPEND ls_return TO et_return.
+        EXIT.
+      ENDIF.
+      SELECT SINGLE dirname
+        FROM user_dir
+        INTO l_dir
+        WHERE aliass = ls_param-low.
+      IF sy-subrc IS NOT INITIAL.
+        MESSAGE e009(zemt_supp_message) INTO ls_return-message.
+        ls_return-type = 'E'.
+        APPEND ls_return TO et_return.
+        EXIT.
+      ENDIF.
+
+      "No leading zeroes in folder name
+      DATA(lv_folder_name_no_zeros) = |{ mv_esc_supply_id ALPHA = OUT }|.
+      gv_add_par = |{ l_dir }/{ lv_folder_name_no_zeros }|.
+
+      CALL FUNCTION 'SXPG_COMMAND_EXECUTE'
+        EXPORTING
+          commandname                   = 'ZMKDIR'
+          additional_parameters         = gv_add_par
+        EXCEPTIONS
+          no_permission                 = 1
+          command_not_found             = 2
+          parameters_too_long           = 3
+          security_risk                 = 4
+          wrong_check_call_interface    = 5
+          program_start_error           = 6
+          program_termination_error     = 7
+          x_error                       = 8
+          parameter_expected            = 9
+          too_many_parameters           = 10
+          illegal_command               = 11
+          wrong_asynchronous_parameters = 12
+          cant_enq_tbtco_entry          = 13
+          jobcount_generation_error     = 14
+          OTHERS                        = 15.
+      IF sy-subrc <> 0.
+        MESSAGE e047(zemt_supp_message) INTO ls_return-message.
+        ls_return-type = 'E'.
+        APPEND ls_return TO et_return.
+        EXIT.
+      ELSE.
+        CONCATENATE gv_add_par lv_filename INTO p_file SEPARATED BY '/'.
+        "Add file key
+        DATA: lv_name             TYPE string,
+              lv_file_with_key    TYPE string,
+              lv_file_key         TYPE string,
+              lv_length           TYPE i VALUE 510,
+              lv_table_length     TYPE i,
+              lv_last_line_length TYPE i.
+
+        lv_name = p_file.
+        lv_file_key = ls_attachments-file_key.
+
+        get_filename_with_filekey(
+          EXPORTING
+            iv_file_name          = lv_name
+            iv_file_key           = lv_file_key
+          RECEIVING
+            rv_file_name_with_key = lv_file_with_key
+        ).
+
+        OPEN DATASET lv_file_with_key FOR OUTPUT IN BINARY MODE.
+
+        lv_table_length = lines(  lt_binary_content ).
+        lv_last_line_length = lv_binary_size - ( ( lv_table_length - 1 ) * 510 ).
+
+        IF sy-subrc = 0.
+          LOOP AT lt_binary_content INTO wl_binary_content.
+            IF sy-tabix = lv_table_length.
+              lv_length = lv_last_line_length.
+            ENDIF.
+            TRANSFER wl_binary_content TO lv_file_with_key LENGTH lv_length.
+            CLEAR wl_binary_content.
+          ENDLOOP.
+        ELSE.
+          MESSAGE e011(zemt_supp_message) INTO ls_return-message.
+          ls_return-type = 'E'.
+          APPEND ls_return TO et_return.
+          EXIT.
+        ENDIF.
+        CLOSE DATASET lv_file_with_key.
+      ENDIF.
+    ENDIF.
+
+    "Supplier attachments needs notifications
+    IF ls_attachments-supplier_authored = 'X'.
+      zcl_emt_trigger_notifications=>esc_ext_attachment(
+      EXPORTING
+      iv_esc = mv_esc_supply_id ).
+    ENDIF.
+
+  ENDMETHOD.
