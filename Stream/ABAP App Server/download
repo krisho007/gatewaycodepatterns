@@ -1,0 +1,69 @@
+  METHOD read_attachment.
+*"----------------------------------------------------------------------
+* Ticket#     Name     Date     Description
+* INC0683404  guptani  06/16/21 Get Attachment Details
+*"----------------------------------------------------------------------
+    DATA: l_dir     TYPE btch0000-text80,
+          lv_buffer TYPE xstring.
+
+    SELECT SINGLE file_name , file_key
+      FROM zemt_attachments
+      INTO ( @DATA(lv_filename) , @DATA(lv_filekey) )
+      WHERE attachment_guid = @iv_attid
+      AND esc_sup_id = @mv_esc_supply_id.
+
+    es_lheader-name = 'Content-Disposition'.
+    es_lheader-value = 'outline; filename="' && lv_filename && '";'.
+
+    SELECT SINGLE * FROM
+     tvarvc INTO @DATA(ls_param)
+     WHERE name = 'ZEMT_FILE_LOC'.
+
+    SELECT SINGLE dirname
+      FROM user_dir
+      INTO l_dir
+      WHERE aliass = ls_param-low.
+
+    SPLIT lv_filename AT '.' INTO DATA(l_name) DATA(l_mimetype).
+    DATA(lv_folder_name_no_zeros) = |{ mv_esc_supply_id ALPHA = OUT }|.
+    CONDENSE lv_folder_name_no_zeros.
+    DATA(p_file) = |{ l_dir }/{ lv_folder_name_no_zeros }/{ lv_filename }|.
+
+    DATA: lv_name          TYPE string,
+          lv_file_key      TYPE string,
+          lv_file_with_key TYPE string.
+
+    lv_name = p_file.
+    lv_file_key = lv_filekey.
+
+    get_filename_with_filekey(
+      EXPORTING
+        iv_file_name          = lv_name
+        iv_file_key           = lv_file_key
+      RECEIVING
+        rv_file_name_with_key = lv_file_with_key
+    ).
+
+    OPEN DATASET lv_file_with_key FOR INPUT IN BINARY MODE .
+
+    IF sy-subrc = 0.
+      DO .
+        READ DATASET lv_file_with_key INTO lv_buffer.
+        IF sy-subrc = 0.
+          CONCATENATE es_stream-value lv_buffer INTO es_stream-value IN BYTE MODE.
+        ELSE.
+          EXIT.
+        ENDIF.
+      ENDDO.
+    ELSE.
+      " Failed to open the file for reading
+      MESSAGE e079(zemt_supp_message) INTO DATA(lv_message).
+      RAISE EXCEPTION TYPE /iwbep/cx_mgw_busi_exception
+        EXPORTING
+          textid            = /iwbep/cx_mgw_busi_exception=>business_error_unlimited
+          message_unlimited = lv_message.
+    ENDIF.
+
+    CLOSE DATASET lv_file_with_key.
+
+  ENDMETHOD.
