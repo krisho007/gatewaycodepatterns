@@ -16,9 +16,18 @@
   DATA: lt_select_table TYPE string_table,
   lv_property_selected type string.
   lt_select_table = io_tech_request_context->get_select( ).
+  
   LOOP AT lt_select_table INTO DATA(lv_select).
-    lv_property_selected = | { lv_property_selected } { lv_select }|.
+    IF lv_property_selected IS INITIAL.
+      lv_property_selected = lv_select.
+    ELSE.
+      lv_property_selected = |{ lv_property_selected }, { lv_select }|.
+    ENDIF.
   ENDLOOP.
+
+  IF lv_property_selected IS INITIAL.
+    lv_property_selected = '*'.
+  ENDIF.
 
 *Get Open SQL WHERE Clause from $filter
   DATA: lv_osql_where_clause TYPE string. 
@@ -72,6 +81,13 @@
         DELETE lt_customers FROM 1 TO lv_skip.
       ENDIF.
 
+" Your SQL Statement goes here
+    SELECT (lv_property_selected)
+        FROM <your DB table>
+        UP TO @lv_total ROWS
+        INTO CORRESPONDING FIELDS OF TABLE @et_entityset
+        WHERE (lv_osql_where_clause).
+
 *Orderby
     DATA: lt_order    TYPE  /iwbep/t_mgw_tech_order,
           ls_order LIKE LINE OF lt_order,
@@ -94,7 +110,7 @@
     
 * Inline count
     IF io_tech_request_context->has_inlinecount( ) = abap_true.
-      SELECT COUNT(*) FROM zacts_v WHERE (lv_where_clause).
+      SELECT COUNT(*) FROM <your DB table> WHERE (lv_where_clause).
       es_response_context-inlinecount = sy-dbcnt.
     ELSE.
       CLEAR es_response_context-inlinecount.
